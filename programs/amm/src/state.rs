@@ -17,7 +17,7 @@ pub struct Pool{
     pub vault_a : Pubkey,
     pub vault_b : Pubkey,
 
-    pub reserve_a : u8,
-    pub reserve_b : u8,
+    pub reserve_a : u64,
+    pub reserve_b : u64,
     
 }
