@@ -122,8 +122,66 @@ pub struct AddLiquidity<'info>{
 }   
 
 #[derive(Accounts)]
-pub struct RemoveLiquidity<'info>{
+pub struct GetQuote<'info>{
     #[account(mut)]
     pub payer : Signer<'info>,
     
+    #[account(
+        mut,
+        seeds = [b"pool", pool_account.token_a.key().as_ref(), pool_account.token_b.key().as_ref()],
+        bump
+    )]
+    pub pool_account : Account<'info, Pool>,
+
+}
+
+
+#[derive(Accounts)]
+pub struct SwapToken<'info>{
+    #[account(mut)]
+    pub payer : Signer<'info>, 
+
+    #[account(
+        seeds = [b"authority", pool_account.key().as_ref()],
+        bump = pool_account.authority_bump
+    )]
+    pub authority : UncheckedAccount<'info>,
+
+    #[account(
+        mut,
+        seeds = [b"pool", pool_account.token_a.key().as_ref(), pool_account.token_b.key().as_ref()],
+        bump
+    )]
+    pub pool_account : Account<'info, Pool>,
+
+    //Vault A-> for sending the token a in vault of pool
+    #[account(
+        mut,
+        address = pool_account.vault_a.key(),
+        constraint = pool_account.token_a == vault_a.mint
+    )]
+    pub vault_a : Account<'info, TokenAccount>,
+
+
+    //Vault B -> For giving the user token
+    #[account(
+        mut,
+        address = pool_account.vault_b.key(),
+        constraint = pool_account.vault_b == vault_b.mint
+    )]
+    pub vault_b : Account<'info, TokenAccount>,
+
+    #[account(mut)]
+    pub user_input_token : Account<'info, TokenAccount>,
+
+    #[account(mut)]
+    pub user_output_token : Account<'info, TokenAccount>,
+
+    pub token_program : Program<'info, Token>
+}
+
+#[derive(Accounts)]
+pub struct RemoveLiquidity<'info>{
+    #[account(mut)]
+    pub payer : Signer<'info>
 }

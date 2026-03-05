@@ -15,6 +15,8 @@ pub mod amm {
 
     use anchor_spl::token;
 
+    use crate::accounts::SwapToken;
+
     use super::*;
 
     pub fn initialize(ctx: Context<InitializePool>, fee: u8) -> Result<()> {
@@ -174,6 +176,36 @@ pub mod amm {
         //Now update the reserves.
         pool.reserve_a += accepted_a;
         pool.reserve_b += accepted_b;
+        Ok(())
+    }
+
+
+    //Recieve token mint for both input and output token;
+    pub fn swap_token(ctx : Context<SwapToken>, amount : u64, min_out : u64)-> Result<()>{
+        let pool_account = &mut ctx.accounts.pool_account;
+    
+        //Few checks to made
+        //1. Check if the amount is not 0
+        require!(amount > 0, ErrorCode::InvalidAmount);
+
+        //2. Check if the mint mnatches the mint stored in pool.
+        require!(ctx.accounts.user_input_token.mint == pool_account.token_a || ctx.accounts.user_input_token.mint == pool_account.token_b, ErrorCode::InvalidTokenAccount);
+        require!(ctx.accounts.user_output_token.mint == pool_account.token_a || ctx.accounts.user_output_token.mint == pool_account.token_b, ErrorCode::InvalidTokenAccount);
+   
+        //4. Check for the authority pda.
+        require!(
+            pool_account.authority == ctx.accounts.authority.key(),
+            ErrorCode::InvalidAuthority
+        );
+
+        //5. Check if the user_input and output_token are not same
+        require!(ctx.accounts.user_input_token.mint != ctx.accounts.user_output_token.mint, ErrorCode::InvalidMintAccount);
+
+        //6. Check the vault given matches the vault stored in the pool.
+        require!(ctx.accounts.vault_a.key() == pool_account.vault_a, ErrorCode::InvalidAccount);
+        require!(ctx.accounts.vault_b.key() == pool_account.vault_b, ErrorCode::InvalidAccount);
+        
+        require!(ctx.accounts.user_input_token.mint == pool_account.vault_a || ctx.accounts.user_input_token.mint == pool_account.vault_b, ErrorCode::InvalidTokenAccount);
         Ok(())
     }
 }

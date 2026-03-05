@@ -22,4 +22,7 @@ pub enum ErrorCode {
 
     #[msg("Invalid mint account")]
     InvalidMintAccount,
+
+    #[msg("Invalid Account Recieved")]
+    InvalidTokenAccount
 }
