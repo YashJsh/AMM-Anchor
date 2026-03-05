@@ -98,7 +98,7 @@ pub struct AddLiquidity<'info>{
 
     //Lp mint, from here user will get the token lp.
     #[account(
-        mut,
+        mut,    
         address = pool_account.lp_mint.key()
     )]
     pub lp_mint : Account<'info, Mint>,
