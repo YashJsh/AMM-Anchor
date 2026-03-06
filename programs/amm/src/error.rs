@@ -34,4 +34,7 @@ pub enum ErrorCode {
 
     #[msg("Math overflow occurred")]
     MathOverflow,
+
+    #[msg("Pool account has nothing")]
+    InvalidPoolState
 }

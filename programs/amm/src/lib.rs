@@ -1,25 +1,20 @@
 pub mod account_context;
+pub mod error;
 pub mod helper;
 pub mod state;
-pub mod error;
 
+use crate::account_context::{AddLiquidity, InitializePool, RemoveLiquidity, SwapToken};
+use crate::error::ErrorCode;
+use crate::helper::calculate_remove_share;
+use anchor_spl::token::{self, burn, Burn, Transfer};
 
 use anchor_lang::prelude::*;
-
-use crate::account_context::{AddLiquidity, InitializePool, SwapToken};
-use crate::error::ErrorCode;
-
 
 declare_id!("AMm3ud8dovmVaEMtVvb34cpFSLo9bTZB1Xt6yLrDjs14");
 
 #[program]
 pub mod amm {
-    use crate::{account_context::RemoveLiquidity, helper::calculate_remove_share};
-
     use super::*;
-
-    use anchor_spl::token::{self, Burn, Transfer, burn};
-
     pub fn initialize(ctx: Context<InitializePool>, fee: u8) -> Result<()> {
         let pool = &mut ctx.accounts.pool_account;
         //Find the pda for the authority:
@@ -144,15 +139,27 @@ pub mod amm {
 
         let mut lp_amount = 0;
         if pool.reserve_a == 0 && pool.reserve_b == 0 {
-            lp_amount = helper::first_lp(accepted_a, accepted_b);
-        } else {
-            lp_amount = helper::calculate_lp(
+            match helper::calculate_lp(
                 accepted_a,
                 accepted_b,
                 pool.reserve_a,
                 pool.reserve_b,
                 total_supply,
-            );
+            ) {
+                Ok(amount) => lp_amount = amount,
+                Err(_) => return Err(ErrorCode::InvalidLpAmount.into()),
+            }
+        } else {
+            match helper::calculate_lp(
+                accepted_a,
+                accepted_b,
+                pool.reserve_a,
+                pool.reserve_b,
+                total_supply,
+            ) {
+                Ok(amount) => lp_amount = amount,
+                Err(_) => return Err(ErrorCode::InvalidLpAmount.into()),
+            }
         }
 
         require!(lp_amount > 0, ErrorCode::InvalidLpAmount);
@@ -180,17 +187,25 @@ pub mod amm {
         Ok(())
     }
 
-    pub fn swap_token(ctx : Context<SwapToken>, amount : u64, min_out : u64)-> Result<()>{
+    pub fn swap_token(ctx: Context<SwapToken>, amount: u64, min_out: u64) -> Result<()> {
         let pool_account = &mut ctx.accounts.pool_account;
-    
+
         //Few checks to made
         //1. Check if the amount is not 0
         require!(amount > 0, ErrorCode::InvalidAmount);
 
         //2. Check if the mint mnatches the mint stored in pool.
-        require!(ctx.accounts.user_input_token.mint == pool_account.token_a || ctx.accounts.user_input_token.mint == pool_account.token_b, ErrorCode::InvalidTokenAccount);
-        require!(ctx.accounts.user_output_token.mint == pool_account.token_a || ctx.accounts.user_output_token.mint == pool_account.token_b, ErrorCode::InvalidTokenAccount);
-   
+        require!(
+            ctx.accounts.user_input_token.mint == pool_account.token_a
+                || ctx.accounts.user_input_token.mint == pool_account.token_b,
+            ErrorCode::InvalidTokenAccount
+        );
+        require!(
+            ctx.accounts.user_output_token.mint == pool_account.token_a
+                || ctx.accounts.user_output_token.mint == pool_account.token_b,
+            ErrorCode::InvalidTokenAccount
+        );
+
         //4. Check for the authority pda.
         require!(
             pool_account.authority == ctx.accounts.authority.key(),
@@ -198,24 +213,32 @@ pub mod amm {
         );
 
         //5. Check if the user_input and output_token are not same
-        require!(ctx.accounts.user_input_token.mint != ctx.accounts.user_output_token.mint, ErrorCode::InvalidMintAccount);
+        require!(
+            ctx.accounts.user_input_token.mint != ctx.accounts.user_output_token.mint,
+            ErrorCode::InvalidMintAccount
+        );
 
         //6. Check the vault given matches the vault stored in the pool.
-        require!(ctx.accounts.vault_a.key() == pool_account.vault_a, ErrorCode::InvalidAccount);
-        require!(ctx.accounts.vault_b.key() == pool_account.vault_b, ErrorCode::InvalidAccount);
-        
+        require!(
+            ctx.accounts.vault_a.key() == pool_account.vault_a,
+            ErrorCode::InvalidAccount
+        );
+        require!(
+            ctx.accounts.vault_b.key() == pool_account.vault_b,
+            ErrorCode::InvalidAccount
+        );
+
         // require!(ctx.accounts.user_input_token.mint == pool_account.vault_a || ctx.accounts.user_input_token.mint == pool_account.vault_b, ErrorCode::InvalidTokenAccount);
 
-    
         //Check user is gettting the amount greated than min out.
         let (reserve_in, reserve_out, vault_in, vault_out);
 
-        if ctx.accounts.user_input_token.mint == pool_account.token_a{
+        if ctx.accounts.user_input_token.mint == pool_account.token_a {
             reserve_in = pool_account.reserve_a;
             reserve_out = pool_account.reserve_b;
             vault_in = ctx.accounts.vault_a;
             vault_out = ctx.accounts.vault_b;
-        }else{
+        } else {
             reserve_in = pool_account.reserve_b;
             reserve_out = pool_account.reserve_a;
             vault_in = ctx.accounts.vault_b;
@@ -229,111 +252,162 @@ pub mod amm {
         require!(amount_out <= reserve_out, ErrorCode::AmountGreaterError);
 
         //Cpi the token to the vault;
-        let accounts_token_to_vault = Transfer{
-            authority : ctx.accounts.payer.to_account_info(),
-            from : ctx.accounts.user_input_token.to_account_info(),
-            to : vault_in.to_account_info()
+        let accounts_token_to_vault = Transfer {
+            authority: ctx.accounts.payer.to_account_info(),
+            from: ctx.accounts.user_input_token.to_account_info(),
+            to: vault_in.to_account_info(),
         };
-        let transfer_to_vault_context = CpiContext::new(ctx.accounts.token_program.to_account_info(), accounts_token_to_vault);
+        let transfer_to_vault_context = CpiContext::new(
+            ctx.accounts.token_program.to_account_info(),
+            accounts_token_to_vault,
+        );
         token::transfer(transfer_to_vault_context, amount)?;
-        
 
         //Cpi the token to the user_token_account;
-        let amount_to_user_account = Transfer{
-            authority : ctx.accounts.authority.to_account_info(),
-            from : vault_out.to_account_info(),
-            to : ctx.accounts.user_output_token.to_account_info(),
+        let amount_to_user_account = Transfer {
+            authority: ctx.accounts.authority.to_account_info(),
+            from: vault_out.to_account_info(),
+            to: ctx.accounts.user_output_token.to_account_info(),
         };
 
         let signer_seeds = [
             b"authority",
             pool_account.key().as_ref(),
-            &[pool_account.authority_bump]
+            &[pool_account.authority_bump],
         ];
 
         let amount_to_user_context = CpiContext::new_with_signer(
-            ctx.accounts.token_program.to_account_info(), 
-            amount_to_user_account, 
-            &[&signer_seeds]
+            ctx.accounts.token_program.to_account_info(),
+            amount_to_user_account,
+            &[&signer_seeds],
         );
 
         token::transfer(amount_to_user_context, amount_out)?;
-        
+
         //Update reserves;
         //Here how to update the correct reserver.and decrese the other reserve how?
-        if ctx.accounts.user_input_token.mint == pool_account.token_a{
+        if ctx.accounts.user_input_token.mint == pool_account.token_a {
             //It means direction is a-> b
             pool_account.reserve_a += amount;
             pool_account.reserve_b -= amount_out;
-        }else{
+        } else {
             pool_account.reserve_a -= amount_out;
             pool_account.reserve_b += amount;
         }
-        
+
         Ok(())
     }
 
-    pub fn remove_liquidity(ctx : Context<RemoveLiquidity>, lp_amount : i64)-> Result<()>{
+    pub fn remove_liquidity(ctx: Context<RemoveLiquidity>, lp_amount: u64) -> Result<()> {
         let pool_account = &mut ctx.accounts.pool_account;
 
-        //Checks necessary 
+        //Checks necessary
         //1. Are the user_token_mint matches the token mint stored in the pool.
-        require!(ctx.accounts.user_token_a.mint == pool_account.token_a, ErrorCode::InvalidAccount);
-        require!(ctx.accounts.user_token_b.mint == pool_account.token_b, ErrorCode::InvalidAccount);
+        require!(
+            ctx.accounts.user_token_a.mint == pool_account.token_a,
+            ErrorCode::InvalidAccount
+        );
+        require!(
+            ctx.accounts.user_token_b.mint == pool_account.token_b,
+            ErrorCode::InvalidAccount
+        );
 
         //2. Vault_a and vault_b matches the vault in pool
-        require!(ctx.accounts.vault_a.key() == pool_account.vault_a, ErrorCode::InvalidAccount);
-        require!(ctx.accounts.vault_b.key() == pool_account.vault_b, ErrorCode::InvalidAccount);
+        require!(
+            ctx.accounts.vault_a.key() == pool_account.vault_a,
+            ErrorCode::InvalidAccount
+        );
+        require!(
+            ctx.accounts.vault_b.key() == pool_account.vault_b,
+            ErrorCode::InvalidAccount
+        );
 
         //3. User token account are not same.
-        require!(ctx.accounts.user_token_a.mint != ctx.accounts.user_token_b.mint, ErrorCode::InvalidAccount);
+        require!(
+            ctx.accounts.user_token_a.mint != ctx.accounts.user_token_b.mint,
+            ErrorCode::InvalidAccount
+        );
 
         //3. Lp mint are given
-        require!(ctx.accounts.user_lp_account.mint == pool_account.lp_mint, ErrorCode::InvalidMintAccount);
-        
+        require!(
+            ctx.accounts.user_lp_account.mint == pool_account.lp_mint,
+            ErrorCode::InvalidMintAccount
+        );
+
         //4. Authority check, cause it is a unchecked account.
-        require!(pool_account.authority == ctx.accounts.authority.key(), ErrorCode::InvalidAuthority);
+        require!(
+            pool_account.authority == ctx.accounts.authority.key(),
+            ErrorCode::InvalidAuthority
+        );
 
         //5. Check if lp amount is greater than 0;
-        require!(lp > 0, ErrorCode::InvalidLpAmount);
+        require!(lp_amount > 0, ErrorCode::InvalidLpAmount);
+
+        //6. Validate lp_mint account as well.
+        require!(
+            ctx.accounts.lp_mint.key() == pool_account.lp_mint,
+            ErrorCode::InvalidMintAccount
+        );
 
         //Check first that user has enough tokens in his lp account which he has mentioned
-        require!(ctx.accounts.user_lp_account.amount >= lp_amount as u64, ErrorCode::InvalidAmount);
+        require!(
+            ctx.accounts.user_lp_account.amount >= lp_amount,
+            ErrorCode::InvalidAmount
+        );
+
+        require!(
+            pool_account.reserve_a > 0 && pool_account.reserve_b > 0,
+            ErrorCode::InvalidPoolState
+        );
 
         //We get the share of both tokens;
-        let share = calculate_remove_share(pool_account.reserve_a, pool_account.reserve_b, lp_amount as u64, ctx.accounts.lp_mint.supply)?;
+        let share = calculate_remove_share(
+            pool_account.reserve_a,
+            pool_account.reserve_b,
+            lp_amount as u64,
+            ctx.accounts.lp_mint.supply,
+        )?;
 
         //Burn tokens.
-        let burn_accounts = Burn{
-            authority : ctx.accounts.payer.to_account_info(),
-            from : ctx.accounts.user_lp_account.to_account_info(),
-            mint : ctx.accounts.lp_mint.to_account_info()
+        let burn_accounts = Burn {
+            authority: ctx.accounts.payer.to_account_info(),
+            from: ctx.accounts.user_lp_account.to_account_info(),
+            mint: ctx.accounts.lp_mint.to_account_info(),
         };
 
-        let burn_cpi_context = CpiContext::new(ctx.accounts.token_program.to_account_info(), burn_accounts);
-        burn(burn_cpi_context, lp_amount as u64)?;
+        let burn_cpi_context =
+            CpiContext::new(ctx.accounts.token_program.to_account_info(), burn_accounts);
+            
+        burn(burn_cpi_context, lp_amount)?;
 
-        //We now want to deposit the token to the user account. 
-        let token_a_account = Transfer{
-            authority : ctx.accounts.authority.to_account_info(),
-            from : ctx.accounts.vault_a.to_account_info(),
-            to : ctx.accounts.user_token_a.to_account_info()
-        };
-        let token_b_account = Transfer{
-            authority : ctx.accounts.authority.to_account_info(),
-            from : ctx.accounts.vault_b.to_account_info(),
-            to : ctx.accounts.user_token_b.to_account_info()
+        //We now want to deposit the token to the user account.
+        let token_a_account = Transfer {
+            authority: ctx.accounts.authority.to_account_info(),
+            from: ctx.accounts.vault_a.to_account_info(),
+            to: ctx.accounts.user_token_a.to_account_info(),
         };
 
-        let signer_seeds = [
-            b"authority",
-            pool_account.key().as_ref(),
-            &[pool_account.authority_bump]
-        ];
-        let token_a_cpi_context = CpiContext::new_with_signer(ctx.accounts.token_program.to_account_info(), token_a_account, &[&signer_seeds]);
-        let token_b_cpi_context = CpiContext::new_with_signer(ctx.accounts.token_program.to_account_info(), token_b_account, &[&signer_seeds]);
+        let key = pool_account.key();
+        let signer_seeds: &[&[u8]] = &[b"authority", key.as_ref(), &[pool_account.authority_bump]];
+        let signer = &[signer_seeds];
+        let token_a_cpi_context = CpiContext::new_with_signer(
+            ctx.accounts.token_program.to_account_info(),
+            token_a_account,
+            signer,
+        );
 
         token::transfer(token_a_cpi_context, share.share_a)?;
+        let token_b_account = Transfer {
+            authority: ctx.accounts.authority.to_account_info(),
+            from: ctx.accounts.vault_b.to_account_info(),
+            to: ctx.accounts.user_token_b.to_account_info(),
+        };
+
+        let token_b_cpi_context = CpiContext::new_with_signer(
+            ctx.accounts.token_program.to_account_info(),
+            token_b_account,
+            signer,
+        );
         token::transfer(token_b_cpi_context, share.share_b)?;
 
         //After transfer is done. We update the resever.
@@ -343,4 +417,3 @@ pub mod amm {
         Ok(())
     }
 }
-
