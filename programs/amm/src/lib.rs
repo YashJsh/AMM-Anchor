@@ -18,7 +18,7 @@ pub mod amm {
 
     use super::*;
 
-    use anchor_spl::token::{self, Transfer};
+    use anchor_spl::token::{self, Burn, Transfer, burn};
 
     pub fn initialize(ctx: Context<InitializePool>, fee: u8) -> Result<()> {
         let pool = &mut ctx.accounts.pool_account;
@@ -304,7 +304,41 @@ pub mod amm {
         let share = calculate_remove_share(pool_account.reserve_a, pool_account.reserve_b, lp_amount as u64, ctx.accounts.lp_mint.supply)?;
 
         //Burn tokens.
-       
+        let burn_accounts = Burn{
+            authority : ctx.accounts.payer.to_account_info(),
+            from : ctx.accounts.user_lp_account.to_account_info(),
+            mint : ctx.accounts.lp_mint.to_account_info()
+        };
+
+        let burn_cpi_context = CpiContext::new(ctx.accounts.token_program.to_account_info(), burn_accounts);
+        burn(burn_cpi_context, lp_amount as u64)?;
+
+        //We now want to deposit the token to the user account. 
+        let token_a_account = Transfer{
+            authority : ctx.accounts.authority.to_account_info(),
+            from : ctx.accounts.vault_a.to_account_info(),
+            to : ctx.accounts.user_token_a.to_account_info()
+        };
+        let token_b_account = Transfer{
+            authority : ctx.accounts.authority.to_account_info(),
+            from : ctx.accounts.vault_b.to_account_info(),
+            to : ctx.accounts.user_token_b.to_account_info()
+        };
+
+        let signer_seeds = [
+            b"authority",
+            pool_account.key().as_ref(),
+            &[pool_account.authority_bump]
+        ];
+        let token_a_cpi_context = CpiContext::new_with_signer(ctx.accounts.token_program.to_account_info(), token_a_account, &[&signer_seeds]);
+        let token_b_cpi_context = CpiContext::new_with_signer(ctx.accounts.token_program.to_account_info(), token_b_account, &[&signer_seeds]);
+
+        token::transfer(token_a_cpi_context, share.share_a)?;
+        token::transfer(token_b_cpi_context, share.share_b)?;
+
+        //After transfer is done. We update the resever.
+        pool_account.reserve_a -= share.share_a;
+        pool_account.reserve_b -= share.share_b;
 
         Ok(())
     }
