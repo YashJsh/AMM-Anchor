@@ -159,6 +159,7 @@ pub struct SwapToken<'info>{
         mut,
         address = pool_account.vault_a.key(),
         constraint = pool_account.token_a == vault_a.mint
+        
     )]
     pub vault_a : Account<'info, TokenAccount>,
 
@@ -167,7 +168,7 @@ pub struct SwapToken<'info>{
     #[account(
         mut,
         address = pool_account.vault_b.key(),
-        constraint = pool_account.vault_b == vault_b.mint
+        constraint = pool_account.vault_b == vault_b.key()
     )]
     pub vault_b : Account<'info, TokenAccount>,
 
@@ -182,6 +183,58 @@ pub struct SwapToken<'info>{
 
 #[derive(Accounts)]
 pub struct RemoveLiquidity<'info>{
+     #[account(mut)]
+    pub payer : Signer<'info>,
+
+    //Main pool account
+    #[account(
+        mut,
+        seeds = [b"pool", pool_account.token_a.key().as_ref(), pool_account.token_b.key().as_ref()],
+        bump
+    )]
+    pub pool_account : Account<'info, Pool>,
+
+    #[account(
+        seeds = [b"authority", pool_account.key().as_ref()],
+        bump = pool_account.authority_bump
+    )]
+    pub authority: UncheckedAccount<'info>,
+
+    //Vault of token A
+    #[account(
+        mut,
+        address = pool_account.vault_a.key()
+    )]
+    pub vault_a : Account<'info, TokenAccount>,
+
+    //Vault for token B
+    #[account(
+        mut,
+        address = pool_account.vault_b.key()
+    )]
+    pub vault_b : Account<'info, TokenAccount>,
+
+    //Lp mint, from here user will get the token lp.
+    #[account(
+        mut,    
+        address = pool_account.lp_mint.key()
+    )]
+    pub lp_mint : Account<'info, Mint>,
+
+    //Both token accounts for trnasfering the token to the vault.
+    #[account(
+        mut
+    )]
+    pub user_token_a : Account<'info, TokenAccount>,
+
     #[account(mut)]
-    pub payer : Signer<'info>
-}
+    pub user_token_b : Account<'info, TokenAccount>,
+
+    //User will give us the lp account -> in which we will give his lp tokens
+    #[account(
+        mut,
+    )]
+    pub user_lp_account : Account<'info, TokenAccount>,
+    
+    pub token_program: Program<'info, Token>,
+}   

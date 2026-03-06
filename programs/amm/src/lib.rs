@@ -1,22 +1,24 @@
-use anchor_lang::prelude::*;
-
-pub mod accounts;
+pub mod account_context;
 pub mod helper;
 pub mod state;
 pub mod error;
 
-use accounts::{AddLiquidity, InitializePool};
-use error::ErrorCode;
 
-declare_id!("HPEyUjDjeFVwGaetxFgq1qz9Wcq2dpGBnshPMXc6v8x9");
+use anchor_lang::prelude::*;
+
+use crate::account_context::{AddLiquidity, InitializePool, SwapToken};
+use crate::error::ErrorCode;
+
+
+declare_id!("AMm3ud8dovmVaEMtVvb34cpFSLo9bTZB1Xt6yLrDjs14");
 
 #[program]
 pub mod amm {
-    use anchor_spl::token::{self, Transfer};
-
-    use crate::{accounts::SwapToken, helper::calculate_swap};
+    use crate::{account_context::RemoveLiquidity, helper::calculate_remove_share};
 
     use super::*;
+
+    use anchor_spl::token::{self, Transfer};
 
     pub fn initialize(ctx: Context<InitializePool>, fee: u8) -> Result<()> {
         let pool = &mut ctx.accounts.pool_account;
@@ -178,8 +180,6 @@ pub mod amm {
         Ok(())
     }
 
-
-    //Recieve token mint for both input and output token;
     pub fn swap_token(ctx : Context<SwapToken>, amount : u64, min_out : u64)-> Result<()>{
         let pool_account = &mut ctx.accounts.pool_account;
     
@@ -226,7 +226,7 @@ pub mod amm {
         let amount_out = calculate_swap(reserve_in, reserve_out, amount_in_with_fee);
 
         require!(amount_out >= min_out, ErrorCode::MinAmountError);
-        require(amount_out <= reserve_out, ErrorCode::AmountGreaterError);
+        require!(amount_out <= reserve_out, ErrorCode::AmountGreaterError);
 
         //Cpi the token to the vault;
         let accounts_token_to_vault = Transfer{
@@ -270,6 +270,42 @@ pub mod amm {
             pool_account.reserve_b += amount;
         }
         
+        Ok(())
+    }
+
+    pub fn remove_liquidity(ctx : Context<RemoveLiquidity>, lp_amount : i64)-> Result<()>{
+        let pool_account = &mut ctx.accounts.pool_account;
+
+        //Checks necessary 
+        //1. Are the user_token_mint matches the token mint stored in the pool.
+        require!(ctx.accounts.user_token_a.mint == pool_account.token_a, ErrorCode::InvalidAccount);
+        require!(ctx.accounts.user_token_b.mint == pool_account.token_b, ErrorCode::InvalidAccount);
+
+        //2. Vault_a and vault_b matches the vault in pool
+        require!(ctx.accounts.vault_a.key() == pool_account.vault_a, ErrorCode::InvalidAccount);
+        require!(ctx.accounts.vault_b.key() == pool_account.vault_b, ErrorCode::InvalidAccount);
+
+        //3. User token account are not same.
+        require!(ctx.accounts.user_token_a.mint != ctx.accounts.user_token_b.mint, ErrorCode::InvalidAccount);
+
+        //3. Lp mint are given
+        require!(ctx.accounts.user_lp_account.mint == pool_account.lp_mint, ErrorCode::InvalidMintAccount);
+        
+        //4. Authority check, cause it is a unchecked account.
+        require!(pool_account.authority == ctx.accounts.authority.key(), ErrorCode::InvalidAuthority);
+
+        //5. Check if lp amount is greater than 0;
+        require!(lp > 0, ErrorCode::InvalidLpAmount);
+
+        //Check first that user has enough tokens in his lp account which he has mentioned
+        require!(ctx.accounts.user_lp_account.amount >= lp_amount as u64, ErrorCode::InvalidAmount);
+
+        //We get the share of both tokens;
+        let share = calculate_remove_share(pool_account.reserve_a, pool_account.reserve_b, lp_amount as u64, ctx.accounts.lp_mint.supply)?;
+
+        //Burn tokens.
+       
+
         Ok(())
     }
 }
