@@ -24,5 +24,14 @@ pub enum ErrorCode {
     InvalidMintAccount,
 
     #[msg("Invalid Account Recieved")]
-    InvalidTokenAccount
+    InvalidTokenAccount,
+
+    #[msg("Amount is less than min_amount")]
+    MinAmountError,
+
+    #[msg("Amount_out is greater than reserve balance")]
+    AmountGreaterError,
+
+    #[msg("Math overflow occurred")]
+    MathOverflow,
 }

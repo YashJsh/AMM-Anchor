@@ -12,10 +12,9 @@ declare_id!("HPEyUjDjeFVwGaetxFgq1qz9Wcq2dpGBnshPMXc6v8x9");
 
 #[program]
 pub mod amm {
+    use anchor_spl::token::{self, Transfer};
 
-    use anchor_spl::token;
-
-    use crate::accounts::SwapToken;
+    use crate::{accounts::SwapToken, helper::calculate_swap};
 
     use super::*;
 
@@ -205,7 +204,72 @@ pub mod amm {
         require!(ctx.accounts.vault_a.key() == pool_account.vault_a, ErrorCode::InvalidAccount);
         require!(ctx.accounts.vault_b.key() == pool_account.vault_b, ErrorCode::InvalidAccount);
         
-        require!(ctx.accounts.user_input_token.mint == pool_account.vault_a || ctx.accounts.user_input_token.mint == pool_account.vault_b, ErrorCode::InvalidTokenAccount);
+        // require!(ctx.accounts.user_input_token.mint == pool_account.vault_a || ctx.accounts.user_input_token.mint == pool_account.vault_b, ErrorCode::InvalidTokenAccount);
+
+    
+        //Check user is gettting the amount greated than min out.
+        let (reserve_in, reserve_out, vault_in, vault_out);
+
+        if ctx.accounts.user_input_token.mint == pool_account.token_a{
+            reserve_in = pool_account.reserve_a;
+            reserve_out = pool_account.reserve_b;
+            vault_in = ctx.accounts.vault_a;
+            vault_out = ctx.accounts.vault_b;
+        }else{
+            reserve_in = pool_account.reserve_b;
+            reserve_out = pool_account.reserve_a;
+            vault_in = ctx.accounts.vault_b;
+            vault_out = ctx.accounts.vault_a;
+        }
+        let amount_in_with_fee = amount * (1000 - pool_account.fee as u64);
+
+        let amount_out = calculate_swap(reserve_in, reserve_out, amount_in_with_fee);
+
+        require!(amount_out >= min_out, ErrorCode::MinAmountError);
+        require(amount_out <= reserve_out, ErrorCode::AmountGreaterError);
+
+        //Cpi the token to the vault;
+        let accounts_token_to_vault = Transfer{
+            authority : ctx.accounts.payer.to_account_info(),
+            from : ctx.accounts.user_input_token.to_account_info(),
+            to : vault_in.to_account_info()
+        };
+        let transfer_to_vault_context = CpiContext::new(ctx.accounts.token_program.to_account_info(), accounts_token_to_vault);
+        token::transfer(transfer_to_vault_context, amount)?;
+        
+
+        //Cpi the token to the user_token_account;
+        let amount_to_user_account = Transfer{
+            authority : ctx.accounts.authority.to_account_info(),
+            from : vault_out.to_account_info(),
+            to : ctx.accounts.user_output_token.to_account_info(),
+        };
+
+        let signer_seeds = [
+            b"authority",
+            pool_account.key().as_ref(),
+            &[pool_account.authority_bump]
+        ];
+
+        let amount_to_user_context = CpiContext::new_with_signer(
+            ctx.accounts.token_program.to_account_info(), 
+            amount_to_user_account, 
+            &[&signer_seeds]
+        );
+
+        token::transfer(amount_to_user_context, amount_out)?;
+        
+        //Update reserves;
+        //Here how to update the correct reserver.and decrese the other reserve how?
+        if ctx.accounts.user_input_token.mint == pool_account.token_a{
+            //It means direction is a-> b
+            pool_account.reserve_a += amount;
+            pool_account.reserve_b -= amount_out;
+        }else{
+            pool_account.reserve_a -= amount_out;
+            pool_account.reserve_b += amount;
+        }
+        
         Ok(())
     }
 }
