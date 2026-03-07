@@ -11,8 +11,10 @@ import { ArrowDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useEffect, useState } from "react"
 import { getUserAccountInfo, UserTokens } from "@/helper/getAccountInfo"
+import { useWallet } from "@solana/wallet-adapter-react"
 
 export const CreateSwap = () => {
+    let wallet = useWallet();
     const [token, setToken] = useState<UserTokens[]>([]);
     useEffect(()=>{
         const accountInfo = async ()=> {
