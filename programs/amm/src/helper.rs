@@ -58,17 +58,19 @@ pub struct Share{
     pub share_b : u64
 }
 
-pub fn calculate_remove_share(reserve_a : u64, reserve_b : u64, lp_amount: u64, total_supply : u64) -> Result<Share, ErrorCode>{
-    let share_a = lp_amount.checked_mul(reserve_b).ok_or(ErrorCode::MathOverflow)?.checked_div(total_supply).ok_or(ErrorCode::MathOverflow)?;
+pub fn calculate_remove_share(reserve_a: u64, reserve_b: u64, lp_amount: u64, total_supply: u64) -> Result<Share, ErrorCode> {
+    // To get Share A, use Reserve A
+    let share_a = (lp_amount as u128)
+        .checked_mul(reserve_a as u128).ok_or(ErrorCode::MathOverflow)?
+        .checked_div(total_supply as u128).ok_or(ErrorCode::MathOverflow)? as u64;
 
-    let share_b = lp_amount.checked_mul(reserve_a).ok_or(ErrorCode::MathOverflow)?.checked_div(total_supply).ok_or(ErrorCode::MathOverflow)?;
+    // To get Share B, use Reserve B
+    let share_b = (lp_amount as u128)
+        .checked_mul(reserve_b as u128).ok_or(ErrorCode::MathOverflow)?
+        .checked_div(total_supply as u128).ok_or(ErrorCode::MathOverflow)? as u64;
 
-    Ok(Share{
-        share_a,
-        share_b
-    })
+    Ok(Share { share_a, share_b })
 }
-
 
 
 // pub fn calculate_swap(reserve_a : u64, reserve_b : u64, amount_in_with_fee : u64) -> u64{

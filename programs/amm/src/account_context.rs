@@ -32,7 +32,7 @@ pub struct InitializePool<'info>{
         token::mint = token_a,
         token::authority = authority
     )]
-    pub vault_token_a : Account<'info, TokenAccount>,
+    pub vault_a : Account<'info, TokenAccount>,
 
     #[account(
         init,
@@ -42,7 +42,7 @@ pub struct InitializePool<'info>{
         token::mint = token_b,
         token::authority = authority
     )]
-    pub vault_token_b : Account<'info, TokenAccount>,
+    pub vault_b : Account<'info, TokenAccount>,
 
     #[account(
         init,

@@ -35,8 +35,8 @@ pub mod amm {
         pool.lp_mint = ctx.accounts.lp_mint.key();
         pool.lp_mint_bump = ctx.bumps.lp_mint;
 
-        pool.vault_a = ctx.accounts.vault_token_a.key();
-        pool.vault_b = ctx.accounts.vault_token_b.key();
+        pool.vault_a = ctx.accounts.vault_a.key();
+        pool.vault_b = ctx.accounts.vault_b.key();
 
         pool.reserve_a = 0;
         pool.reserve_b = 0;
@@ -139,15 +139,13 @@ pub mod amm {
         //Calculate the lp :
         //Check if it the first lp:
         let total_supply = ctx.accounts.lp_mint.supply;
+        msg!("Total supply of lp mint {}", total_supply);
 
         let mut lp_amount = 0;
         if pool.reserve_a == 0 && pool.reserve_b == 0 {
-            match helper::calculate_lp(
+            match helper::first_lp(
                 accepted_a,
                 accepted_b,
-                pool.reserve_a,
-                pool.reserve_b,
-                total_supply,
             ) {
                 Ok(amount) => lp_amount = amount,
                 Err(_) => return Err(ErrorCode::InvalidLpAmount.into()),
