@@ -17,6 +17,7 @@ pub struct InitializePool<'info>{
     )]
     pub pool_account : Account<'info, Pool>,
 
+    /// CHECK:
     #[account(
         seeds = [b"authority", pool_account.key().as_ref()],
         bump
@@ -62,7 +63,6 @@ pub struct InitializePool<'info>{
 }
 
 
-
 #[derive(Accounts)]
 pub struct AddLiquidity<'info>{
     #[account(mut)]
@@ -76,6 +76,7 @@ pub struct AddLiquidity<'info>{
     )]
     pub pool_account : Account<'info, Pool>,
 
+    /// CHECK:
     #[account(
         seeds = [b"authority", pool_account.key().as_ref()],
         bump = pool_account.authority_bump
@@ -125,7 +126,7 @@ pub struct AddLiquidity<'info>{
 pub struct GetQuote<'info>{
     #[account(mut)]
     pub payer : Signer<'info>,
-    
+
     #[account(
         mut,
         seeds = [b"pool", pool_account.token_a.key().as_ref(), pool_account.token_b.key().as_ref()],
@@ -135,12 +136,12 @@ pub struct GetQuote<'info>{
 
 }
 
-
 #[derive(Accounts)]
 pub struct SwapToken<'info>{
     #[account(mut)]
     pub payer : Signer<'info>, 
 
+    /// CHECK:
     #[account(
         seeds = [b"authority", pool_account.key().as_ref()],
         bump = pool_account.authority_bump
@@ -194,6 +195,7 @@ pub struct RemoveLiquidity<'info>{
     )]
     pub pool_account : Account<'info, Pool>,
 
+    /// CHECK:
     #[account(
         seeds = [b"authority", pool_account.key().as_ref()],
         bump = pool_account.authority_bump

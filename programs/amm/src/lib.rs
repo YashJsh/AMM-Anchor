@@ -3,17 +3,20 @@ pub mod error;
 pub mod helper;
 pub mod state;
 
-use crate::account_context::{AddLiquidity, InitializePool, RemoveLiquidity, SwapToken};
+use crate::account_context::*;
 use crate::error::ErrorCode;
 use crate::helper::calculate_remove_share;
 use anchor_spl::token::{self, burn, Burn, Transfer};
+use anchor_spl::token::MintTo;
 
 use anchor_lang::prelude::*;
 
-declare_id!("AMm3ud8dovmVaEMtVvb34cpFSLo9bTZB1Xt6yLrDjs14");
+declare_id!("3wsk1NGSwh77rXU3Pd5umqexMp5Qy2q31wt7QJB8pCis");
 
 #[program]
 pub mod amm {
+    use crate::helper::calculate_swap;
+
     use super::*;
     pub fn initialize(ctx: Context<InitializePool>, fee: u8) -> Result<()> {
         let pool = &mut ctx.accounts.pool_account;
@@ -172,11 +175,14 @@ pub mod amm {
         };
 
         //Now we have to create a context.
-        let signer_seeds = [b"authority", pool.key().as_ref(), &[pool.authority_bump]];
+        // let signer_seeds = [b"authority", pool.key().as_ref(), &[pool.authority_bump]]; This was not working
+        let key = pool.key();
+        let signer_seeds: &[&[u8]] = &[b"authority", key.as_ref(), &[pool.authority_bump]];
+        let signer = &[signer_seeds];
         let cpi_context = CpiContext::new_with_signer(
             ctx.accounts.token_program.to_account_info(),
             cpi_account,
-            &[&signer_seeds],
+            signer,
         );
 
         token::mint_to(cpi_context, lp_amount)?;
@@ -236,17 +242,17 @@ pub mod amm {
         if ctx.accounts.user_input_token.mint == pool_account.token_a {
             reserve_in = pool_account.reserve_a;
             reserve_out = pool_account.reserve_b;
-            vault_in = ctx.accounts.vault_a;
-            vault_out = ctx.accounts.vault_b;
+            vault_in = &ctx.accounts.vault_a;
+            vault_out = &ctx.accounts.vault_b;
         } else {
             reserve_in = pool_account.reserve_b;
             reserve_out = pool_account.reserve_a;
-            vault_in = ctx.accounts.vault_b;
-            vault_out = ctx.accounts.vault_a;
+            vault_in = &ctx.accounts.vault_b;
+            vault_out = &ctx.accounts.vault_a;
         }
         let amount_in_with_fee = amount * (1000 - pool_account.fee as u64);
 
-        let amount_out = calculate_swap(reserve_in, reserve_out, amount_in_with_fee);
+        let amount_out = calculate_swap(reserve_in, reserve_out, amount_in_with_fee)?;
 
         require!(amount_out >= min_out, ErrorCode::MinAmountError);
         require!(amount_out <= reserve_out, ErrorCode::AmountGreaterError);
@@ -270,16 +276,15 @@ pub mod amm {
             to: ctx.accounts.user_output_token.to_account_info(),
         };
 
-        let signer_seeds = [
-            b"authority",
-            pool_account.key().as_ref(),
-            &[pool_account.authority_bump],
-        ];
+        
+        let key = pool_account.key();
+        let signer_seeds: &[&[u8]] = &[b"authority", key.as_ref(), &[pool_account.authority_bump]];
+        let signer = &[signer_seeds];
 
         let amount_to_user_context = CpiContext::new_with_signer(
             ctx.accounts.token_program.to_account_info(),
             amount_to_user_account,
-            &[&signer_seeds],
+            signer,
         );
 
         token::transfer(amount_to_user_context, amount_out)?;
