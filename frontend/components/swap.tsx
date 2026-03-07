@@ -9,9 +9,20 @@ import {
 
 import { ArrowDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useEffect, useState } from "react"
+import { getUserAccountInfo, UserTokens } from "@/helper/getAccountInfo"
 
 export const CreateSwap = () => {
-  return (
+    const [token, setToken] = useState<UserTokens[]>([]);
+    useEffect(()=>{
+        const accountInfo = async ()=> {
+            const tokens = await getUserAccountInfo("6KpVFh4ehrWZoWNaNWWsd4MitZ9axhybgS6CXdNiUP1V");
+            setToken(tokens);
+        }
+        accountInfo();
+    },[])
+
+    return (
     <Card className="w-full max-w-[440px] bg-card shadow-2xl backdrop-blur-xl">
       <CardHeader className="pb-2">
         <div className="flex justify-between items-center">
