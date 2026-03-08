@@ -1,4 +1,4 @@
-import { getProgramInstance } from "@/program/getProgramInstance"
+import { useProgram } from "@/program/getProgramInstance"
 import { InitializePool } from "@/program/initialize_pool";
 import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react"
 
@@ -10,7 +10,7 @@ export const AddLiquidity = ()=> {
         console.log("No wallet present");
         return;
     }
-    const program = getProgramInstance(wallet, connection);
+    const program = useProgram(wallet, connection);
     
     const addLiquidity = ()=> {
         if (!program){

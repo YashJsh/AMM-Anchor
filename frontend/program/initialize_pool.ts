@@ -12,7 +12,7 @@ export const InitializePool = async (program: Program<Amm>, tokenAMint: string, 
         ],
         PROGRAM_ID
     );
-    try {
+    try {   
         const tx = await program.methods.initialize(fee).accounts({
             poolAccount: pool_pda,
             tokenA: tokenAMint,

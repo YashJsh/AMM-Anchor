@@ -1,3 +1,4 @@
+"use client"
 import {
   Card,
   CardContent,
@@ -10,20 +11,11 @@ import {
 import { ArrowDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useEffect, useState } from "react"
-import { getUserAccountInfo, UserTokens } from "@/helper/getAccountInfo"
-import { useWallet } from "@solana/wallet-adapter-react"
+import { getUserTokensInfo, UserTokens } from "@/helper/getUserToken"
+import { useConnection, useWallet } from "@solana/wallet-adapter-react"
 
 export const CreateSwap = () => {
-    let wallet = useWallet();
-    const [token, setToken] = useState<UserTokens[]>([]);
-    useEffect(()=>{
-        const accountInfo = async ()=> {
-            const tokens = await getUserAccountInfo("6KpVFh4ehrWZoWNaNWWsd4MitZ9axhybgS6CXdNiUP1V");
-            setToken(tokens);
-        }
-        accountInfo();
-    },[])
-
+    
     return (
     <Card className="w-full max-w-[440px] bg-card shadow-2xl backdrop-blur-xl">
       <CardHeader className="pb-2">
