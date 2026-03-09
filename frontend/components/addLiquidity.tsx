@@ -1,8 +1,4 @@
-import { PoolInfo, PoolWithNeededMetaData } from "@/helper/getAllPool";
-import { useProgram } from "@/program/getProgramInstance"
-import { InitializePool } from "@/program/initialize_pool";
-import { useAnchorWallet, useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { useEffect, useState } from "react";
+import { PoolWithNeededMetaData } from "@/helper/getAllPool";
 import { Button } from "./ui/button";
 import { Badge, Droplets, Plus } from "lucide-react";
 
@@ -18,15 +14,15 @@ import { SpecificPool } from "./poolDetail";
 import { UserTokens } from "@/helper/getUserToken";
 import { Program } from "@coral-xyz/anchor";
 import { Amm } from "../../target/types/amm";
-import { connection } from "next/server";
 import { Connection } from "@solana/web3.js";
+import { useState } from "react";
 
 
 export const AddLiquidityComponent = ({ pools, userToken, program, connection }: { pools: PoolWithNeededMetaData[] , userToken : UserTokens[], program : Program<Amm>, connection : Connection}) => {
     const [selectedPool, setSelectedPool] = useState<PoolWithNeededMetaData | null>(null);
 
     return (
-        <Card className="w-full max-w-[600px] bg-card shadow-2xl backdrop-blur-xl border-border">
+        <Card className="w-full bg-card shadow-2xl backdrop-blur-xl border-border overflow-scroll">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
                 <div>
                     <CardTitle className="text-2xl font-bold">Liquidity Pools</CardTitle>

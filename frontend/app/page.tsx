@@ -13,6 +13,13 @@ import { useProgram } from "@/program/getProgramInstance";
 import { useAnchorWallet, useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { useEffect, useState } from "react";
 
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs"
+
 export default function Home() {
   let wallet = useAnchorWallet();
   const {connection} = useConnection();
@@ -50,12 +57,42 @@ export default function Home() {
   }, [program, allTokenMetaData]);
 
   return (
-    <div className="h-screen w-screen">
+    <div className="min-h-screen w-screen bg-background text-foreground">
       <Navbar />
-      <div className="flex items-center justify-center mt-40">
-        {/* <CreateSwap />
-        <CreatePool tokens={token}/> */}
-        <AddLiquidityComponent pools={poolsData!} userToken={token} program={program!} connection={connection}/>
+      
+      <div className="flex flex-col items-center justify-start pt-32 px-4">
+        <Tabs defaultValue="swap" className="w-full">
+          {/* TAB NAVIGATION */}
+          <TabsList className="grid w-full max-w-[500px] mx-auto grid-cols-4 rounded-xl bg-muted/50 p-1 mb-8 ">
+            <TabsTrigger value="swap" className="rounded-lg">Swap</TabsTrigger>
+            <TabsTrigger value="create" className="rounded-lg text-xs sm:text-sm">Create</TabsTrigger>
+            <TabsTrigger value="provide" className="rounded-lg text-xs sm:text-sm">Provide</TabsTrigger>
+            <TabsTrigger value="remove" className="rounded-lg text-xs sm:text-sm">Remove</TabsTrigger>
+          </TabsList>
+
+          
+          <TabsContent value="swap" className="flex justify-center outline-none">
+            <CreateSwap />
+          </TabsContent>
+
+          
+          <TabsContent value="create" className="flex justify-center outline-none">
+            <CreatePool tokens={token} />
+          </TabsContent>
+
+          <TabsContent value="provide" className="flex justify-center outline-none">
+              <AddLiquidityComponent 
+                    pools={poolsData!} 
+                    userToken={token} 
+                    program={program!} 
+                    connection={connection}
+              />
+          </TabsContent>
+
+          <TabsContent value="remove" className="flex justify-center outline-none">
+            {/* <RemoveLiquidity /> */}
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

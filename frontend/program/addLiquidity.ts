@@ -3,7 +3,7 @@ import { Amm } from "../../target/types/amm";
 import { Connection, PublicKey, Transaction } from "@solana/web3.js";
 import BN from "bn.js";
 import { PROGRAM_ID } from "@/utils/program_id";
-import { createAssociatedTokenAccountInstruction, getAssociatedTokenAddress, getMint, TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { createAssociatedTokenAccountInstruction, getAssociatedTokenAddress, getMint } from "@solana/spl-token";
 import { UserTokens } from "@/helper/getUserToken";
 import { WalletContextState } from "@solana/wallet-adapter-react";
 
