@@ -4,13 +4,11 @@ import { AddLiquidityComponent } from "@/components/addLiquidity";
 import CreatePool from "@/components/createPool";
 import { Navbar } from "@/components/navbar";
 import { CreateSwap } from "@/components/swap";
-import { TokenSelector } from "@/components/tokenSelector";
-import { getPoolsWithNeededMetadata, PoolInfo, PoolWithNeededMetaData } from "@/helper/getAllPool";
+import { getPoolsWithNeededMetadata,  PoolWithNeededMetaData } from "@/helper/getAllPool";
 import { getTokenMetadata } from "@/helper/getTokenMetadata";
 import { getUserTokensInfo, UserTokens } from "@/helper/getUserToken";
-import { AddLiquidity } from "@/program/addLiquidity";
 import { useProgram } from "@/program/getProgramInstance";
-import { useAnchorWallet, useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
 import { useEffect, useState } from "react";
 
 import {
@@ -19,6 +17,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs"
+import { RemoveLiquidity } from "@/components/removeLiquidity";
 
 export default function Home() {
   let wallet = useAnchorWallet();
@@ -41,7 +40,7 @@ export default function Home() {
       setToken(tokens);
     }
     accountInfo();
-  }, [wallet?.publicKey]);
+  }, [wallet]);
 
 
   useEffect(() => {
@@ -69,10 +68,13 @@ export default function Home() {
             <TabsTrigger value="provide" className="rounded-lg text-xs sm:text-sm">Provide</TabsTrigger>
             <TabsTrigger value="remove" className="rounded-lg text-xs sm:text-sm">Remove</TabsTrigger>
           </TabsList>
-
           
           <TabsContent value="swap" className="flex justify-center outline-none">
-            <CreateSwap />
+            <CreateSwap 
+              userTokens={token}
+              program={program!}
+              poolData={poolsData!}
+            />
           </TabsContent>
 
           
@@ -90,9 +92,9 @@ export default function Home() {
           </TabsContent>
 
           <TabsContent value="remove" className="flex justify-center outline-none">
-            {/* <RemoveLiquidity /> */}
+            <RemoveLiquidity pools={poolsData!} userTokens={token} program={program!}/>
           </TabsContent>
-        </Tabs>
+        </Tabs> 
       </div>
     </div>
   );

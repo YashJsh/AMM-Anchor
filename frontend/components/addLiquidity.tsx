@@ -1,6 +1,6 @@
 import { PoolWithNeededMetaData } from "@/helper/getAllPool";
 import { Button } from "./ui/button";
-import { Badge, Droplets, Plus } from "lucide-react";
+import { AlertCircle, Badge, Droplets, Plus } from "lucide-react";
 
 import {
     Card,
@@ -20,6 +20,7 @@ import { useState } from "react";
 
 export const AddLiquidityComponent = ({ pools, userToken, program, connection }: { pools: PoolWithNeededMetaData[] , userToken : UserTokens[], program : Program<Amm>, connection : Connection}) => {
     const [selectedPool, setSelectedPool] = useState<PoolWithNeededMetaData | null>(null);
+    const hasPools = pools && pools.length > 0;
 
     return (
         <Card className="w-full bg-card shadow-2xl backdrop-blur-xl border-border overflow-scroll">
@@ -34,9 +35,15 @@ export const AddLiquidityComponent = ({ pools, userToken, program, connection }:
             </CardHeader>
 
             <CardContent className="space-y-4">
-                {!pools ? (
-                    <div className="py-10 text-center text-muted-foreground border border-dashed rounded-2xl">
-                        No active pools found.
+                {!hasPools ? (
+                    <div className="py-20 flex flex-col items-center justify-center text-center space-y-4 border-2 border-dashed border-border rounded-3xl bg-muted/5">
+                        <div className="p-4 bg-muted/20 rounded-full">
+                            <AlertCircle className="w-10 h-10 text-muted-foreground/50" />
+                        </div>
+                        <div>
+                            <p className="text-xl font-semibold text-muted-foreground">No pools yet</p>
+                            <p className="text-sm text-muted-foreground/60">Be the first to create a liquidity pair.</p>
+                        </div>
                     </div>
                 ) : (
                     pools.map((pool) => (

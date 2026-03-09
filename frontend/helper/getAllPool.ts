@@ -18,8 +18,8 @@ export interface PoolInfo {
 
 export interface PoolWithNeededMetaData{
     publicKey: PublicKey,   
-    tokenA : string,
-    tokenB : string,
+    tokenA : PublicKey,
+    tokenB : PublicKey,
     tokenAsymbol: string;
     tokenBsymbol : string;
     tokenAlogo : string
@@ -27,29 +27,28 @@ export interface PoolWithNeededMetaData{
     reserveA: BN;
     reserveB: BN;
     fee: number;
+    lpMint : PublicKey
 }
 
 export const getPoolsWithNeededMetadata = async (program : Program<Amm>, allTokenMetaData: Map<string, any>): Promise<PoolWithNeededMetaData[]> => {
 
     const pool : PoolInfo[] = await program.account.pool.all();
     return pool.map((poolInfo)=> {
-        const tokenAMint = poolInfo.account.tokenA.toString();
-        const tokenBMint = poolInfo.account.tokenB.toString();
-
-        const tokenAMeta = allTokenMetaData.get(tokenAMint);
-        const tokenBMeta = allTokenMetaData.get(tokenBMint);
+        const tokenAMeta = allTokenMetaData.get(poolInfo.account.tokenA.toBase58());
+        const tokenBMeta = allTokenMetaData.get(poolInfo.account.tokenB.toBase58());
 
         return {
             publicKey: poolInfo.publicKey,   
-            tokenA : tokenAMint,
-            tokenB : tokenBMint,
+            tokenA : poolInfo.account.tokenA,
+            tokenB : poolInfo.account.tokenB,
             tokenAsymbol: tokenAMeta?.symbol ?? "UNK",
             tokenBsymbol: tokenBMeta?.symbol ?? "UNK",
             tokenAlogo: tokenAMeta?.logoURI ?? "",
             tokenBlogo: tokenBMeta?.logoURI ?? "",
             reserveA: poolInfo.account.reserveA,
             reserveB: poolInfo.account.reserveB,
-            fee: poolInfo.account.fee
+            fee: poolInfo.account.fee,
+            lpMint : poolInfo.publicKey
         }
     })
 }

@@ -9,7 +9,7 @@ export const useProgram = (wallet : AnchorWallet, connection : Connection) => {
         console.log("No wallet connected")
         return;
     }
-    const connection_testnet = new Connection("http://127.0.0.1:8899", "confirmed");
+    const connection_testnet = new Connection(clusterApiUrl("devnet"), "confirmed");
     const provider = new AnchorProvider(connection_testnet, wallet, { commitment: "confirmed" });
 
     return new Program<Amm>(idl as Amm, provider)

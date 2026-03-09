@@ -17,6 +17,7 @@ import { Program } from "@coral-xyz/anchor";
 import { AddLiquidity } from "@/program/addLiquidity";
 import { Connection } from "@solana/web3.js";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { toast } from "sonner";
 
 
 export const SpecificPool = ({ 
@@ -51,7 +52,13 @@ export const SpecificPool = ({
         if (!program) {
             return;
         }
-        const tx = AddLiquidity(program, pool.tokenA, pool.tokenB, Number(tokenAAmount), Number(tokenBAmount), userTokens, wallet, connection);
+        try {
+            const tx = AddLiquidity(program, pool.tokenA, pool.tokenB, Number(tokenAAmount), Number(tokenBAmount), userTokens, wallet, connection);
+            toast.success("Liquidity added");
+        } catch (error) {
+            toast.error("Transaction failed");
+            console.error("Error in adding liquidity", error);
+        }
     }
 
 
@@ -65,11 +72,7 @@ export const SpecificPool = ({
                 {pool && (
                     <>
                         <DialogHeader>
-                            <div className="flex items-center gap-3 mb-2">
-                                {/* <div className="flex -space-x-2">
-                                    <img src={pool.tokenAlogo} alt="A" className="w-8 h-8 rounded-full border-2 border-card" />
-                                    <img src={pool.tokenBlogo} alt="B" className="w-8 h-8 rounded-full border-2 border-card" />
-                                </div> */}
+                            <div className="flex items-center gap-3 mb-2"> 
                                 <DialogTitle className="text-xl">
                                     {pool.tokenAsymbol} / {pool.tokenBsymbol}
                                 </DialogTitle>
@@ -150,6 +153,7 @@ export const SpecificPool = ({
                             <Button 
                                 className="w-full h-14 text-lg font-bold shadow-lg shadow-primary/20" 
                                 disabled={!canProvide}
+                                onClick={addLiquidity}
                             >
                                 {canProvide ? "Add Liquidity" : "Incomplete Pair"}
                             </Button>
