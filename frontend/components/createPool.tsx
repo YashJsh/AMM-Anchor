@@ -13,12 +13,10 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card"
-import { Plus } from "lucide-react";
 import { TokenSelector } from "./tokenSelector";
 import { UserTokens } from "@/helper/getUserToken";
 import { Button } from "./ui/button";
-import { publicKey } from "@coral-xyz/anchor/dist/cjs/utils";
-import { AddLiquidity } from "./addLiquidity";
+
 
 
 export default function CreatePool({ tokens }: { tokens: UserTokens[] }) {
@@ -33,9 +31,7 @@ export default function CreatePool({ tokens }: { tokens: UserTokens[] }) {
     if (!anchorWallet) {
         return;
     }
-
     const program = useProgram(anchorWallet, connection);
-
     const handleCreate = async () => {
         if (!program) {
             return;
@@ -46,7 +42,6 @@ export default function CreatePool({ tokens }: { tokens: UserTokens[] }) {
             tokenB,
             fee
         )
-        const provideLiquidity = await AddLiquidity()
         console.log(pool);
     }
 
@@ -85,11 +80,11 @@ export default function CreatePool({ tokens }: { tokens: UserTokens[] }) {
                     </div>
 
                     {/* PLUS ICON SEPARATOR */}
-                    <div className="flex justify-center -my-3 relative z-10">
+                    {/* <div className="flex justify-center -my-3 relative z-10">
                         <div className="bg-card p-2 rounded-xl border border-border">
                             <Plus className="w-4 h-4 text-muted-foreground" />
                         </div>
-                    </div>
+                    </div> */}
 
                     {/* TOKEN B INPUT */}
                     <div className="p-4 rounded-2xl border border-border space-y-2 bg-muted/40">

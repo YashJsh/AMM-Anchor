@@ -10,12 +10,8 @@ import {
 
 import { ArrowDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { useEffect, useState } from "react"
-import { getUserTokensInfo, UserTokens } from "@/helper/getUserToken"
-import { useConnection, useWallet } from "@solana/wallet-adapter-react"
 
 export const CreateSwap = () => {
-    
     return (
     <Card className="w-full max-w-[440px] bg-card shadow-2xl backdrop-blur-xl">
       <CardHeader className="pb-2">
