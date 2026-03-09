@@ -8,8 +8,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import { useState } from "react";
-import Image from "next/image";
 
 export const TokenSelector = ({ tokens, value, onValueChange }: { tokens: UserTokens[]; value: string; onValueChange: (value: string) => void }) => {
     return <Select value={value} onValueChange={onValueChange}>

@@ -1,7 +1,7 @@
 import { Program, AnchorProvider, Idl } from "@coral-xyz/anchor"
 import idl from "../../target/idl/amm.json"
 import { AnchorWallet } from "@solana/wallet-adapter-react"
-import { Connection } from "@solana/web3.js";
+import { clusterApiUrl, Connection } from "@solana/web3.js";
 import { Amm } from "../../target/types/amm";
 
 export const useProgram = (wallet : AnchorWallet, connection : Connection) => {
@@ -9,7 +9,8 @@ export const useProgram = (wallet : AnchorWallet, connection : Connection) => {
         console.log("No wallet connected")
         return;
     }
-    const provider = new AnchorProvider(connection, wallet, { commitment: "confirmed" });
+    const connection_testnet = new Connection(clusterApiUrl("devnet"), "confirmed");
+    const provider = new AnchorProvider(connection_testnet, wallet, { commitment: "confirmed" });
 
     return new Program<Amm>(idl as Amm, provider)
 }

@@ -13,12 +13,13 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card"
-import { Plus } from "lucide-react";
 import { TokenSelector } from "./tokenSelector";
 import { UserTokens } from "@/helper/getUserToken";
 import { Button } from "./ui/button";
-import { publicKey } from "@coral-xyz/anchor/dist/cjs/utils";
-import { AddLiquidity } from "./addLiquidity";
+import { toast } from "sonner";
+import { AddLiquidity } from "@/program/addLiquidity";
+import { PublicKey } from "@solana/web3.js";
+
 
 
 export default function CreatePool({ tokens }: { tokens: UserTokens[] }) {
@@ -28,26 +29,42 @@ export default function CreatePool({ tokens }: { tokens: UserTokens[] }) {
 
     const [tokenA, setTokenA] = useState("");
     const [tokenB, setTokenB] = useState("");
+    const [inputtokenA, setInputTokenA] = useState("");
+    const [inputTokenB, setInputTokenB] = useState("");
     const [fee, setFee] = useState(30);
 
     if (!anchorWallet) {
-        return;
+        return null;
     }
-
     const program = useProgram(anchorWallet, connection);
-
     const handleCreate = async () => {
         if (!program) {
             return;
         }
-        const pool = await InitializePool(
-            program,
-            tokenA,
-            tokenB,
-            fee
-        )
-        const provideLiquidity = await AddLiquidity()
-        console.log(pool);
+        if (tokenA == tokenB) {
+            toast.error("Pool can't be of same tokens");
+            return;
+        }
+        if (!inputtokenA || !inputTokenB) {
+            toast.error("Enter liquidity amounts");
+            return;
+        }
+        try {
+            const pool = await InitializePool(
+                program,
+                tokenA,
+                tokenB,
+                fee,
+                wallet
+            )
+            console.log(pool);
+            const provideLiquidity = await AddLiquidity(program, new PublicKey(tokenA), new PublicKey(tokenB), Number(inputtokenA), Number(inputTokenB), tokens, wallet, connection);
+            toast.success("Liquidity added");
+        } catch (error) {
+            toast.error("Failed creating pool");
+            console.error(error);
+        }
+
     }
 
     return (
@@ -71,7 +88,7 @@ export default function CreatePool({ tokens }: { tokens: UserTokens[] }) {
                     <div className="p-4 rounded-2xl border border-border space-y-2 bg-muted/40">
                         <div className="flex justify-between text-xs text-muted-foreground">
                             <span>Input Token A</span>
-                            <span>Balance: {tokens.find((t)=> t.mint === tokenA)?.amount}</span>
+                            <span>Balance: {tokens.find((t) => t.mint === tokenA)?.amount}</span>
                         </div>
 
                         <div className="flex items-center justify-between gap-4">
@@ -79,23 +96,20 @@ export default function CreatePool({ tokens }: { tokens: UserTokens[] }) {
                                 type="number"
                                 placeholder="0.00"
                                 className="bg-transparent text-2xl font-semibold outline-none w-full"
+                                onChange={(e) => {
+                                    setInputTokenA(e.target.value)
+                                }}
                             />
                             <TokenSelector tokens={tokens} value={tokenA} onValueChange={setTokenA} />
                         </div>
                     </div>
 
-                    {/* PLUS ICON SEPARATOR */}
-                    <div className="flex justify-center -my-3 relative z-10">
-                        <div className="bg-card p-2 rounded-xl border border-border">
-                            <Plus className="w-4 h-4 text-muted-foreground" />
-                        </div>
-                    </div>
 
                     {/* TOKEN B INPUT */}
                     <div className="p-4 rounded-2xl border border-border space-y-2 bg-muted/40">
                         <div className="flex justify-between text-xs text-muted-foreground">
                             <span>Input Token B</span>
-                            <span>Balance: {tokens.find((t)=> t.mint === tokenB)?.amount}</span>
+                            <span>Balance: {tokens.find((t) => t.mint === tokenB)?.amount}</span>
                         </div>
 
                         <div className="flex items-center justify-between gap-4">
@@ -103,6 +117,9 @@ export default function CreatePool({ tokens }: { tokens: UserTokens[] }) {
                                 type="number"
                                 placeholder="0.00"
                                 className="bg-transparent text-2xl font-semibold outline-none w-full"
+                                onChange={(e) => {
+                                    setInputTokenB(e.target.value)
+                                }}
                             />
                             <TokenSelector tokens={tokens} value={tokenB} onValueChange={setTokenB} />
                         </div>
@@ -113,6 +130,9 @@ export default function CreatePool({ tokens }: { tokens: UserTokens[] }) {
                     <Button
                         className="w-full uppercase font-bold py-6"
                         disabled={!tokenA || !tokenB}
+                        onClick={() => {
+                            handleCreate()
+                        }}
                     >
                         {wallet.publicKey ? "Initialize Pool" : "Connect Wallet"}
                     </Button>
