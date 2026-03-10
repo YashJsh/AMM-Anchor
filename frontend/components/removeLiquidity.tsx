@@ -16,12 +16,14 @@ import { BN } from "bn.js"
 export const RemoveLiquidity = ({
     pools,
     userTokens,
-    program
+    program,
+    onTransactionComplete
 
 }: {
     pools: PoolWithNeededMetaData[],
     userTokens: UserTokens[],
-    program: Program<Amm>
+    program: Program<Amm>,
+    onTransactionComplete?: () => Promise<void>
 }) => {
     const [selectedPoolId, setSelectedPoolId] = useState<string | null>(null);
     const [lpAmount, setLpAmount] = useState("");
@@ -120,6 +122,10 @@ export const RemoveLiquidity = ({
         console.log("Remove liquidity tx:", tx);
 
         setLpAmount("");
+        
+        if (onTransactionComplete) {
+            await onTransactionComplete();
+        }
 
     } catch (error: any) {
 

@@ -28,9 +28,39 @@ export default function Home() {
   const [token, setToken] = useState<UserTokens[]>([]);
   const [allTokenMetaData, setAllTokenMetadata] = useState<Map<string, any>>();
   const [poolsData, setPoolsData] = useState<PoolWithNeededMetaData[]>();
-  const [isLoadingData, setIsLoadingData] = useState(false); // New state for data fetching
+  const [isLoadingData, setIsLoadingData] = useState(false);
 
   const program = wallet ? useProgram(wallet, connection) : null;
+
+  // Function to refresh user tokens
+  const fetchUserTokens = async () => {
+    if (!wallet) return;
+    try {
+      const tokenMetadata = await getTokenMetadata();
+      setAllTokenMetadata(tokenMetadata);
+      const tokens = await getUserTokensInfo(wallet.publicKey, connection, tokenMetadata);
+      setToken(tokens);
+    } catch (e) {
+      console.error("Error fetching tokens:", e);
+    }
+  };
+
+  // Function to refresh pools
+  const fetchPools = async () => {
+    if (!program || !allTokenMetaData) return;
+    try {
+      const poolsWithMetadata = await getPoolsWithNeededMetadata(program, connection, allTokenMetaData);
+      setPoolsData(poolsWithMetadata);
+    } catch (e) {
+      console.error("Error fetching pools:", e);
+    }
+  };
+
+  // Main refresh function to call both
+  const refreshData = async () => {
+    await fetchUserTokens();
+    await fetchPools();
+  };
 
   useEffect(() => {
     if (!wallet) {
@@ -57,13 +87,13 @@ export default function Home() {
   useEffect(() => {
     if (!program || !allTokenMetaData) return;
 
-    const fetchPools = async () => {
+    const fetchPoolsData = async () => {
       const poolsWithMetadata = await getPoolsWithNeededMetadata(program, connection, allTokenMetaData);
       setPoolsData(poolsWithMetadata);
     };
 
-    fetchPools();
-  }, [allTokenMetaData, connection]);
+    fetchPoolsData();
+  }, [allTokenMetaData]);
 
   // --- LOADING RENDER ---
   if (connecting || (connected && isLoadingData && token.length === 0)) {
@@ -97,19 +127,19 @@ export default function Home() {
             </TabsList>
             
             <TabsContent value="swap" className="flex justify-center outline-none">
-              <CreateSwap userTokens={token} program={program!} poolData={poolsData!} />
+              <CreateSwap userTokens={token} program={program!} poolData={poolsData!} onTransactionComplete={refreshData} />
             </TabsContent>
 
             <TabsContent value="create" className="flex justify-center outline-none">
-              <CreatePool tokens={token} />
+              <CreatePool tokens={token} onTransactionComplete={refreshData} />
             </TabsContent>
 
             <TabsContent value="provide" className="flex justify-center outline-none">
-                <AddLiquidityComponent pools={poolsData!} userToken={token} program={program!} connection={connection} />
+                <AddLiquidityComponent pools={poolsData!} userToken={token} program={program!} connection={connection} onTransactionComplete={refreshData} />
             </TabsContent>
 
             <TabsContent value="remove" className="flex justify-center outline-none">
-              <RemoveLiquidity pools={poolsData!} userTokens={token} program={program!}/>
+              <RemoveLiquidity pools={poolsData!} userTokens={token} program={program!} onTransactionComplete={refreshData} />
             </TabsContent>
           </Tabs> 
         )}

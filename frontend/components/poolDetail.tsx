@@ -26,13 +26,15 @@ export const SpecificPool = ({
     onClose,
     userTokens,
     program,
-    connection
+    connection,
+    onTransactionComplete
 }: {
     pool: PoolWithNeededMetaData,
     onClose: () => void,
     userTokens: UserTokens[],
     program: Program<Amm>,
-    connection: Connection
+    connection: Connection,
+    onTransactionComplete?: () => Promise<void>
 }) => {
     const wallet = useWallet();
     const [tokenAAmount, settokenAAmount] = useState("");
@@ -59,6 +61,10 @@ export const SpecificPool = ({
         try {
             const tx = await AddLiquidity(program, pool.tokenA, pool.tokenB, Number(tokenAAmount), Number(tokenBAmount), userTokens, wallet, connection);
             toast.success("Liquidity added");
+            
+            if (onTransactionComplete) {
+                await onTransactionComplete();
+            }
         } catch (error) {
             toast.error("Transaction failed");
             console.error("Error in adding liquidity", error);

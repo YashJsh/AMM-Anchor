@@ -22,7 +22,7 @@ import { PublicKey } from "@solana/web3.js";
 
 
 
-export default function CreatePool({ tokens }: { tokens: UserTokens[] }) {
+export default function CreatePool({ tokens, onTransactionComplete }: { tokens: UserTokens[]; onTransactionComplete?: () => Promise<void> }) {
     const wallet = useWallet();
     const anchorWallet = useAnchorWallet();
     const { connection } = useConnection();
@@ -61,6 +61,10 @@ export default function CreatePool({ tokens }: { tokens: UserTokens[] }) {
             console.log("Pool Initialized : ",pool);
             const provideLiquidity = await AddLiquidity(program, new PublicKey(tokenA), new PublicKey(tokenB), Number(inputtokenA), Number(inputTokenB), tokens, wallet, connection);
             toast.success("Liquidity added");
+            
+            if (onTransactionComplete) {
+                await onTransactionComplete();
+            }
         } catch (error) {
             toast.error("Failed creating pool");
             console.error(error);

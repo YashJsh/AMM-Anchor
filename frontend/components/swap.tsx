@@ -25,10 +25,12 @@ export const CreateSwap = ({
   userTokens,
   program,
   poolData,
+  onTransactionComplete,
 }: {
   userTokens: UserTokens[];
   program: Program<Amm>;
   poolData: PoolWithNeededMetaData[];
+  onTransactionComplete?: () => Promise<void>;
 }) => {
   const wallet = useWallet();
   const [fromTokenMint, setFromTokenMint] = useState<string>("");
@@ -84,6 +86,10 @@ export const CreateSwap = ({
 
       toast.dismiss();
       toast.success("Swap successful");
+      
+      if (onTransactionComplete) {
+        await onTransactionComplete();
+      }
 
     } catch (error) {
 
