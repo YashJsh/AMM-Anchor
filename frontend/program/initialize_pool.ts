@@ -4,11 +4,11 @@ import { Amm } from "../../target/types/amm";
 import { PROGRAM_ID } from "@/utils/program_id";
 import { WalletContextState } from "@solana/wallet-adapter-react";
 
-export const InitializePool = async (program: Program<Amm>, tokenAMint: string, tokenBMint: string, fee: number, wallet : WalletContextState) => {
+export const InitializePool = async (program: Program<Amm>, tokenAMint: string, tokenBMint: string, fee: number, wallet: WalletContextState) => {
     const mintA = new PublicKey(tokenAMint);
     const mintB = new PublicKey(tokenBMint);
-
-    // deterministic ordering
+    console.log("Program Id is : ", program.programId.toBase58());
+    // deterministic ordering           
     const [token0, token1] =
         mintA.toBuffer().compare(mintB.toBuffer()) < 0
             ? [mintA, mintB]
@@ -22,19 +22,21 @@ export const InitializePool = async (program: Program<Amm>, tokenAMint: string, 
         ],
         PROGRAM_ID
     );
-    try {   
-        const pool = await program.account.pool.fetch(pool_pda);
-        if (pool) {
-            console.log("Pool already exists at address: ", pool_pda.toBase58());
-            return pool_pda;
-        }
+    try {
+        const pool = await program.account.pool.fetchNullable(pool_pda);
 
+        if (pool) {
+            console.log("Pool already exists:", pool_pda.toBase58());
+            return pool_pda;
+        };
+        
         const tx = await program.methods.initialize(fee).accounts({
             poolAccount: pool_pda,
             tokenA: token0,
             tokenB: token1,
-            payer : wallet.publicKey
+            payer: wallet.publicKey
         } as any).rpc();
+
         let pool_state = await program.account.pool.fetch(pool_pda);
         console.log("Transaction Signature for initalizing the pool is : ", tx);
         console.log("Pool_state Initialized : ", pool_state);

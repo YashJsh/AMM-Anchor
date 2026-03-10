@@ -34,15 +34,15 @@ export const AddLiquidity = async (
     PROGRAM_ID
   );
 
-  const mintA = await getMint(connection, token_a);
-  const mintB = await getMint(connection, token_b);
+  const mintA = await getMint(connection, token0);
+  const mintB = await getMint(connection, token1);
 
   const userTokenAAccount = userToken.find(
-    (t) => t.mint === token_a.toBase58()
+    (t) => t.mint === token0.toBase58()
   );
 
   const userTokenBAccount = userToken.find(
-    (t) => t.mint === token_b.toBase58()
+    (t) => t.mint === token1.toBase58()
   );
 
   if (!userTokenAAccount || !userTokenBAccount) {

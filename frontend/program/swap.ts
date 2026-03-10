@@ -18,6 +18,8 @@ export const swap_token = async (
   if (!wallet.publicKey) {
     throw new Error("Wallet not connected");
   }
+  console.log("Amount in is : ", amount_in);
+  console.log("Min out is : ", min_out);
   const mintA = new PublicKey(inputTokenMint);
   const mintB = new PublicKey(outputTokenMint);
 
@@ -26,6 +28,8 @@ export const swap_token = async (
     mintA.toBuffer().compare(mintB.toBuffer()) < 0
       ? [mintA, mintB]
       : [mintB, mintA];
+
+
 
   try {
     let [pool_pda] = PublicKey.findProgramAddressSync(
@@ -37,6 +41,10 @@ export const swap_token = async (
       program.programId
     );
     const pool_state = await program.account.pool.fetch(pool_pda);
+    const isAToB =
+      pool_state.tokenA.toBase58() === inputTokenMint;
+
+
     const tx = await program.methods
       .swapToken(new BN(amount_in.toString()), new BN(min_out))
       .accounts({

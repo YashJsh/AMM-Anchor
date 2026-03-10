@@ -50,6 +50,7 @@ export default function CreatePool({ tokens }: { tokens: UserTokens[] }) {
             return;
         }
         try {
+            console.log("Control Reached in Initialized Pool");
             const pool = await InitializePool(
                 program,
                 tokenA,
@@ -57,7 +58,7 @@ export default function CreatePool({ tokens }: { tokens: UserTokens[] }) {
                 fee,
                 wallet
             )
-            console.log(pool);
+            console.log("Pool Initialized : ",pool);
             const provideLiquidity = await AddLiquidity(program, new PublicKey(tokenA), new PublicKey(tokenB), Number(inputtokenA), Number(inputTokenB), tokens, wallet, connection);
             toast.success("Liquidity added");
         } catch (error) {
