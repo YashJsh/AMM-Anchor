@@ -11,12 +11,12 @@ use anchor_spl::token::MintTo;
 
 use anchor_lang::prelude::*;
 
-declare_id!("3wsk1NGSwh77rXU3Pd5umqexMp5Qy2q31wt7QJB8pCis");
+declare_id!("AMMyJmCvTSumAvhfwBoQBa3CSZG1vGv4Zek6Q2MctPhG");
 
 #[program]
 pub mod amm {
     use crate::helper::calculate_swap;
-
+    
     use super::*;
     pub fn initialize(ctx: Context<InitializePool>, fee: u8) -> Result<()> {
         let pool = &mut ctx.accounts.pool_account;
@@ -141,8 +141,12 @@ pub mod amm {
         let total_supply = ctx.accounts.lp_mint.supply;
         msg!("Total supply of lp mint {}", total_supply);
 
+        let reserve_a = ctx.accounts.vault_a.amount;
+        let reserve_b = ctx.accounts.vault_b.amount;
+
         let mut lp_amount = 0;
         if pool.reserve_a == 0 && pool.reserve_b == 0 {
+
             match helper::first_lp(
                 accepted_a,
                 accepted_b,
@@ -154,8 +158,8 @@ pub mod amm {
             match helper::calculate_lp(
                 accepted_a,
                 accepted_b,
-                pool.reserve_a,
-                pool.reserve_b,
+                reserve_a,
+                reserve_b,
                 total_supply,
             ) {
                 Ok(amount) => lp_amount = amount,

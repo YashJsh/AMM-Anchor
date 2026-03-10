@@ -10,35 +10,42 @@ import {
 import { Button } from "./ui/button";
 import { UserTokens } from "@/helper/getUserToken";
 import { AlertCircle } from "lucide-react";
-import { Alert, AlertDescription} from "@/components/ui/alert";
-import { useState } from "react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useEffect, useState } from "react";
 import { Amm } from "../../target/types/amm";
 import { Program } from "@coral-xyz/anchor";
 import { AddLiquidity } from "@/program/addLiquidity";
 import { Connection } from "@solana/web3.js";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { toast } from "sonner";
+import { getMint } from "@solana/spl-token"
+import { getExplorerLink } from "@/helper/explorerHelper";
 
 
-export const SpecificPool = ({ 
-    pool, 
-    onClose, 
+export const SpecificPool = ({
+    pool,
+    onClose,
     userTokens,
-    program, 
-    connection
-}: { 
-    pool: PoolWithNeededMetaData, 
-    onClose: () => void, 
+    program,
+    connection,
+    onTransactionComplete
+}: {
+    pool: PoolWithNeededMetaData,
+    onClose: () => void,
     userTokens: UserTokens[],
-    program : Program<Amm>,
-    connection : Connection
+    program: Program<Amm>,
+    connection: Connection,
+    onTransactionComplete?: () => Promise<void>
 }) => {
     const wallet = useWallet();
     const [tokenAAmount, settokenAAmount] = useState("");
     const [tokenBAmount, settokenBAmount] = useState("");
 
-    const tokenAAddress = pool.tokenA.toString();
-    const tokenBAddress = pool.tokenB.toString();
+    const [tokenADecimals, setTokenADecimals] = useState(9);
+    const [tokenBDecimals, setTokenBDecimals] = useState(9);
+
+    const tokenAAddress = pool.tokenA.toBase58();
+    const tokenBAddress = pool.tokenB.toBase58();
 
     const userTokenA = userTokens.find((t) => t.mint === tokenAAddress);
     const userTokenB = userTokens.find((t) => t.mint === tokenBAddress);
@@ -48,13 +55,25 @@ export const SpecificPool = ({
     const canProvide = hasTokenA && hasTokenB;
 
 
-    const addLiquidity = () => {
+    const addLiquidity = async () => {
         if (!program) {
             return;
         }
         try {
-            const tx = AddLiquidity(program, pool.tokenA, pool.tokenB, Number(tokenAAmount), Number(tokenBAmount), userTokens, wallet, connection);
-            toast.success("Liquidity added");
+            const result = await AddLiquidity(program, pool.tokenA, pool.tokenB, Number(tokenAAmount), Number(tokenBAmount), userTokens, wallet, connection);
+            
+            const explorerUrl = getExplorerLink(result.signature, "devnet");
+            
+            toast.success("Liquidity added", {
+                action: {
+                    label: "View Tx",
+                    onClick: () => window.open(explorerUrl, '_blank')
+                }
+            });
+            
+            if (onTransactionComplete) {
+                await onTransactionComplete();
+            }
         } catch (error) {
             toast.error("Transaction failed");
             console.error("Error in adding liquidity", error);
@@ -62,8 +81,9 @@ export const SpecificPool = ({
     }
 
 
-    const formatReserve = (reserve: any) => {
-        return (Number(reserve.toString()) / 1e9).toLocaleString(undefined, { maximumFractionDigits: 2 });
+    const formatReserve = (reserve: any, decimals: number) => {
+        return (Number(reserve.toString()) / Math.pow(10, decimals))
+            .toLocaleString(undefined, { maximumFractionDigits: 4 });
     };
 
     return (
@@ -72,7 +92,7 @@ export const SpecificPool = ({
                 {pool && (
                     <>
                         <DialogHeader>
-                            <div className="flex items-center gap-3 mb-2"> 
+                            <div className="flex items-center gap-3 mb-2">
                                 <DialogTitle className="text-xl">
                                     {pool.tokenAsymbol} / {pool.tokenBsymbol}
                                 </DialogTitle>
@@ -80,19 +100,18 @@ export const SpecificPool = ({
                         </DialogHeader>
 
                         <div className="p-3 bg-muted/30 rounded-lg space-y-1">
-                                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Pool Contract</p>
-                                <p className="font-mono text-[10px] break-all">{pool.publicKey.toBase58()}</p>
+                            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Pool Contract</p>
+                            <p className="font-mono text-[10px] break-all">{pool.publicKey.toBase58()}</p>
                         </div>
 
-                        {/* POOL STATS SECTION */}
                         <div className="grid grid-cols-2 gap-3 p-4 bg-muted/40 rounded-2xl border border-border">
                             <div className="space-y-1">
                                 <p className="text-[10px] uppercase text-muted-foreground font-bold tracking-tight">Total {pool.tokenAsymbol}</p>
-                                <p className="text-sm font-semibold">{formatReserve(pool.reserveA)}</p>
+                                <p className="text-sm font-semibold">{formatReserve(pool.reserveA, pool.tokenADecimal)}</p>
                             </div>
                             <div className="space-y-1">
                                 <p className="text-[10px] uppercase text-muted-foreground font-bold tracking-tight">Total {pool.tokenBsymbol}</p>
-                                <p className="text-sm font-semibold">{formatReserve(pool.reserveB)}</p>
+                                <p className="text-sm font-semibold">{formatReserve(pool.reserveB, pool.tokenBDecimal)}</p>
                             </div>
                             <div className="col-span-2 pt-2 border-t border-border/50 flex justify-between items-center">
                                 <p className="text-[10px] uppercase text-muted-foreground font-bold">Trading Fee</p>
@@ -110,7 +129,6 @@ export const SpecificPool = ({
                                 </Alert>
                             )}
 
-                            {/* INPUT A */}
                             <div className="p-4 rounded-xl border border-border bg-background/50 space-y-2">
                                 <div className="flex justify-between text-xs text-muted-foreground">
                                     <span>Deposit {pool.tokenAsymbol}</span>
@@ -122,7 +140,7 @@ export const SpecificPool = ({
                                         placeholder="0.00"
                                         className="bg-transparent text-xl font-bold outline-none w-full"
                                         disabled={!hasTokenA}
-                                        onChange={(event)=>{
+                                        onChange={(event) => {
                                             settokenAAmount(event.target.value);
                                         }}
                                     />
@@ -130,7 +148,6 @@ export const SpecificPool = ({
                                 </div>
                             </div>
 
-                            {/* INPUT B */}
                             <div className="p-4 rounded-xl border border-border bg-background/50 space-y-2">
                                 <div className="flex justify-between text-xs text-muted-foreground">
                                     <span>Deposit {pool.tokenBsymbol}</span>
@@ -142,7 +159,7 @@ export const SpecificPool = ({
                                         placeholder="0.00"
                                         className="bg-transparent text-xl font-bold outline-none w-full"
                                         disabled={!hasTokenB}
-                                        onChange={(event)=>{
+                                        onChange={(event) => {
                                             settokenBAmount(event.target.value);
                                         }}
                                     />
@@ -150,8 +167,8 @@ export const SpecificPool = ({
                                 </div>
                             </div>
 
-                            <Button 
-                                className="w-full h-14 text-lg font-bold shadow-lg shadow-primary/20" 
+                            <Button
+                                className="w-full h-14 text-lg font-bold shadow-lg shadow-primary/20"
                                 disabled={!canProvide}
                                 onClick={addLiquidity}
                             >

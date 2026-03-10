@@ -222,48 +222,48 @@ describe("amm", () => {
   });
 
 
-  it("Removes Liquidity from the pool", async () => {
-    console.log("\n--- Test: Remove Liquidity ---");
-    const pool_state = await program.account.pool.fetch(pool_pda);
+    it("Removes Liquidity from the pool", async () => {
+      console.log("\n--- Test: Remove Liquidity ---");
+      const pool_state = await program.account.pool.fetch(pool_pda);
 
-    // 1. Check how many LP tokens the user has
-    const userLpAccount = await getOrCreateAssociatedTokenAccount(
-      provider.connection, (wallet as any).payer, pool_state.lpMint, wallet.publicKey
-    );
+      // 1. Check how many LP tokens the user has
+      const userLpAccount = await getOrCreateAssociatedTokenAccount(
+        provider.connection, (wallet as any).payer, pool_state.lpMint, wallet.publicKey
+      );
 
-    const userTokenAAccount = await getOrCreateAssociatedTokenAccount(
-      provider.connection, (wallet as any).payer, tokenAMint, wallet.publicKey
-    );
-    const userTokenBAccount = await getOrCreateAssociatedTokenAccount(
-      provider.connection, (wallet as any).payer, tokenBMint, wallet.publicKey
-    );
-    const lpBalance = new anchor.BN(userLpAccount.amount.toString());
+      const userTokenAAccount = await getOrCreateAssociatedTokenAccount(
+        provider.connection, (wallet as any).payer, tokenAMint, wallet.publicKey
+      );
+      const userTokenBAccount = await getOrCreateAssociatedTokenAccount(
+        provider.connection, (wallet as any).payer, tokenBMint, wallet.publicKey
+      );
+      const lpBalance = new anchor.BN(userLpAccount.amount.toString());
 
-    console.log("Removing LP Amount:", lpBalance.toNumber() / 1e6);
+      console.log("Removing LP Amount:", lpBalance.toNumber() / 1e6);
 
-    // 2. Execute Remove Liquidity
-    await program.methods
-      .removeLiquidity(lpBalance)
-      .accounts({
-        payer: wallet.publicKey,
-        poolAccount: pool_pda,
-        authority: authorityPda,
-        vaultA: pool_state.vaultA,
-        vaultB: pool_state.vaultB,
-        lpMint: pool_state.lpMint,
-        userTokenA: userTokenAAccount.address,
-        userTokenB: userTokenBAccount.address,
-        userLpAccount: userLpAccount.address,
-        tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
-      } as any)
-      .rpc();
+      // 2. Execute Remove Liquidity
+      await program.methods
+        .removeLiquidity(lpBalance)
+        .accounts({
+          payer: wallet.publicKey,
+          poolAccount: pool_pda,
+          authority: authorityPda,
+          vaultA: pool_state.vaultA,
+          vaultB: pool_state.vaultB,
+          lpMint: pool_state.lpMint,
+          userTokenA: userTokenAAccount.address,
+          userTokenB: userTokenBAccount.address,
+          userLpAccount: userLpAccount.address,
+          tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
+        } as any)
+        .rpc();
 
-    // 3. Verify pool is now (almost) empty
-    const finalPoolState = await program.account.pool.fetch(pool_pda);
-    console.log("Final Reserve A:", finalPoolState.reserveA.toNumber());
-    console.log("Final Reserve B:", finalPoolState.reserveB.toNumber());
+      // 3. Verify pool is now (almost) empty
+      const finalPoolState = await program.account.pool.fetch(pool_pda);
+      console.log("Final Reserve A:", finalPoolState.reserveA.toNumber());
+      console.log("Final Reserve B:", finalPoolState.reserveB.toNumber());
 
-    assert.equal(finalPoolState.reserveA.toNumber(), 0);
-    assert.equal(finalPoolState.reserveB.toNumber(), 0);
+      assert.equal(finalPoolState.reserveA.toNumber(), 0);
+      assert.equal(finalPoolState.reserveB.toNumber(), 0);
+    });
   });
-});

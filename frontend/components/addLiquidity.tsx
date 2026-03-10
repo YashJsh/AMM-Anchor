@@ -18,7 +18,7 @@ import { Connection } from "@solana/web3.js";
 import { useState } from "react";
 
 
-export const AddLiquidityComponent = ({ pools, userToken, program, connection }: { pools: PoolWithNeededMetaData[] , userToken : UserTokens[], program : Program<Amm>, connection : Connection}) => {
+export const AddLiquidityComponent = ({ pools, userToken, program, connection, onTransactionComplete }: { pools: PoolWithNeededMetaData[] , userToken : UserTokens[], program : Program<Amm>, connection : Connection, onTransactionComplete?: () => Promise<void>}) => {
     const [selectedPool, setSelectedPool] = useState<PoolWithNeededMetaData | null>(null);
     const hasPools = pools && pools.length > 0;
 
@@ -101,6 +101,7 @@ export const AddLiquidityComponent = ({ pools, userToken, program, connection }:
                 userTokens={userToken} 
                 program={program}
                 connection={connection}
+                onTransactionComplete={onTransactionComplete}
             />}
         </Card>
     )

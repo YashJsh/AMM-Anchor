@@ -33,22 +33,20 @@ pub fn calculate_lp(amount_a : u64, amount_b : u64, reserve_a : u64, reserve_b :
     Ok(u64::min(lp_a, lp_b))
 }
 
-pub fn calculate_swap(reserve_in : u64 , reserve_out : u64, amount_in_with_fee : u64) -> Result<u64, ErrorCode>{
-    // let numerator = amount_in_with_fee * reserve_out;
-    // let denominator = reserve_in * 1000 + amount_in_with_fee;
-    let numerator = amount_in_with_fee
-        .checked_mul(reserve_out)
+pub fn calculate_swap(reserve_in: u64, reserve_out: u64, amount_in_with_fee: u64) -> Result<u64, ErrorCode> {
+    let numerator = (amount_in_with_fee as u128)
+        .checked_mul(reserve_out as u128)
         .ok_or(ErrorCode::MathOverflow)?;
 
-    let denominator = reserve_in
-        .checked_mul(1000)
+    let denominator = (reserve_in as u128)
+        .checked_mul(1000u128)
         .ok_or(ErrorCode::MathOverflow)?
-        .checked_add(amount_in_with_fee)
+        .checked_add(amount_in_with_fee as u128)
         .ok_or(ErrorCode::MathOverflow)?;
 
     let amount_out = numerator
         .checked_div(denominator)
-        .ok_or(ErrorCode::MathOverflow)?;
+        .ok_or(ErrorCode::MathOverflow)? as u64;
 
     Ok(amount_out)
 }

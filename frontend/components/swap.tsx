@@ -8,7 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-import { ArrowDown, Info } from "lucide-react";
+import { ArrowDown, Info, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { TokenSelector } from "./tokenSelector";
@@ -20,15 +20,18 @@ import { getSwapOutput } from "@/helper/getSwapAmount";
 import { PoolWithNeededMetaData } from "@/helper/getAllPool";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { toast } from "sonner";
+import { getExplorerLink } from "@/helper/explorerHelper";
 
 export const CreateSwap = ({
   userTokens,
   program,
   poolData,
+  onTransactionComplete,
 }: {
   userTokens: UserTokens[];
   program: Program<Amm>;
   poolData: PoolWithNeededMetaData[];
+  onTransactionComplete?: () => Promise<void>;
 }) => {
   const wallet = useWallet();
   const [fromTokenMint, setFromTokenMint] = useState<string>("");
@@ -40,19 +43,38 @@ export const CreateSwap = ({
   const [fromTokenAccount, setFromTokenAccount] = useState<string>("");
   const [toTokenAccount, setToTokenAccount] = useState<string>("");
   const [fromTokenAccountDecimal, setFromTokenAccountDecimal] = useState(0);
-  const slippage = 0.01; // 1% slippage tolerance
 
   const swapToken = async () => {
-    if (!fromTokenAccount || !toTokenAccount) return;
+
+    if (!selectedPool) {
+      toast.error("No pool found for this pair");
+      return;
+    }
+
+    if (!fromAmount || Number(fromAmount) <= 0) {
+      toast.error("Enter valid amount");
+      return;
+    }
+
     if (fromTokenMint === toTokenMint) {
       toast.error("Can't swap same tokens");
       return;
     }
+
+    if (!fromTokenAccount || !toTokenAccount) {
+      toast.error("Token accounts not found");
+      return;
+    }
+
     const amountInLamports = BigInt(
-      Math.floor(Number(fromAmount) * 10 ** fromTokenAccountDecimal)
+      Math.floor(Number(fromAmount) * Math.pow(10, fromTokenAccountDecimal))
     );
+
     try {
-      const tx = await swap_token(
+
+      toast.loading("Executing swap...");
+
+      const signature = await swap_token(
         program,
         amountInLamports,
         minOutLamports,
@@ -62,12 +84,32 @@ export const CreateSwap = ({
         toTokenAccount,
         wallet
       );
-      toast.success("Swap successful")
-    } catch (error) {
-      toast.error("Swap Failed");
-      console.error("Swap failed : ", error);
-    }
 
+      toast.dismiss();
+      const explorerUrl = getExplorerLink(signature, "devnet");
+      
+      toast.success("Swap successful", {
+        action: {
+          label: "View Tx",
+          onClick: () => window.open(explorerUrl, '_blank')
+        }
+      });
+
+      setFromAmount("");
+      setOutputAmount("");
+      setMinOutLamports(BigInt(0));
+      
+      if (onTransactionComplete) {
+        await onTransactionComplete();
+      }
+
+    } catch (error) {
+
+      toast.dismiss();
+      toast.error("Swap failed");
+
+      console.error("Swap error:", error);
+    }
   };
 
   useEffect(() => {
@@ -101,32 +143,38 @@ export const CreateSwap = ({
     if (!inputToken || !outputToken) return;
 
     const isAToB = selectedPool.tokenA.toBase58() === fromTokenMint;
-    const reserveIn = isAToB
-      ? BigInt(selectedPool.reserveA.toString())
-      : BigInt(selectedPool.reserveB.toString())
-    const reserveOut = isAToB
-      ? BigInt(selectedPool.reserveB.toString())
-      : BigInt(selectedPool.reserveA.toString())
+
+    const reserveIn = BigInt(
+      isAToB ? selectedPool.reserveA.toString() : selectedPool.reserveB.toString()
+    );
+
+    const reserveOut = BigInt(
+      isAToB ? selectedPool.reserveB.toString() : selectedPool.reserveA.toString()
+    );
+
     const amountInLamports = BigInt(
-      Math.floor(Number(fromAmount) * 10 ** inputToken.decimals)
+      Math.floor(Number(fromAmount) * Math.pow(10, fromTokenAccountDecimal))
     );
 
-    const outputLamports = getSwapOutput(
-      amountInLamports,
-      reserveIn,
-      reserveOut
-    );
+    if (amountInLamports === BigInt(0)) {
+      setOutputAmount("0");
+      return;
+    }
 
-    const slippageNumerator = BigInt(100 - slippage * 100);
-    const slippageDenominator = BigInt(100);
+    const outputLamports = getSwapOutput(amountInLamports, reserveIn, reserveOut);
 
-    const minOutLamportsCalc =
-      (outputLamports * slippageNumerator) / slippageDenominator;
+    if (outputLamports === BigInt(0)) {
+      setOutputAmount("0");
+      return;
+    }
 
-    setMinOutLamports(minOutLamportsCalc);
-    const minOutHuman =
-      minOutLamportsCalc / BigInt(10) ** BigInt(outputToken.decimals);
-    setOutputAmount(Number(minOutHuman).toFixed(6));
+    // minOut directly from outputLamports — formula matches contract exactly
+    const minOut = (outputLamports * BigInt(95)) / BigInt(100);
+    setMinOutLamports(minOut - BigInt(2));
+
+    const outputHuman = Number(outputLamports) / Math.pow(10, outputToken.decimals);
+    setOutputAmount(outputHuman.toFixed(6));
+
   }, [fromAmount, selectedPool, fromTokenMint, toTokenMint, userTokens]);
 
   const handleFlip = () => {
@@ -235,7 +283,7 @@ export const CreateSwap = ({
           className="w-full uppercase font-bold py-6"
           onClick={swapToken}
           disabled={
-            !fromTokenMint || !toTokenMint || !fromAmount || !selectedPool
+            !fromTokenMint || !toTokenMint || !fromAmount || !selectedPool || outputAmount === "0"
           }
         >
           {fromTokenMint && toTokenMint ? "Swap" : "Select Tokens"}
