@@ -1,6 +1,6 @@
 import { PublicKey } from "@solana/web3.js";
 import { Program } from "@coral-xyz/anchor/dist/cjs/program";
-import { Amm } from "../../target/types/amm";
+import { Amm } from "../idl/amm";
 import BN from "bn.js";
 import { WalletContextState } from "@solana/wallet-adapter-react";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";

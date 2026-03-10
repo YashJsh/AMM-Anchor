@@ -1,5 +1,5 @@
 import { BN, Program } from "@coral-xyz/anchor"
-import { Amm } from "../../target/types/amm"
+import { Amm } from "../idl/amm";
 import { Connection, PublicKey } from "@solana/web3.js"
 import { getMint } from "@solana/spl-token"
 

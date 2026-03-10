@@ -9,7 +9,7 @@ import { Trash2, AlertCircle} from "lucide-react"
 import { removeLiquidity } from "@/program/removeLiquidity"
 import { useWallet } from "@solana/wallet-adapter-react"
 import { Program } from "@coral-xyz/anchor"
-import { Amm } from "../../target/types/amm"
+import { Amm } from "../idl/amm";
 import { toast } from "sonner"
 import { BN } from "bn.js"
 import { getExplorerLink } from "@/helper/explorerHelper"

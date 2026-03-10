@@ -12,7 +12,7 @@ import { UserTokens } from "@/helper/getUserToken";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useEffect, useState } from "react";
-import { Amm } from "../../target/types/amm";
+import { Amm } from "../idl/amm";
 import { Program } from "@coral-xyz/anchor";
 import { AddLiquidity } from "@/program/addLiquidity";
 import { Connection } from "@solana/web3.js";

@@ -13,7 +13,7 @@ import {
 import { SpecificPool } from "./poolDetail";
 import { UserTokens } from "@/helper/getUserToken";
 import { Program } from "@coral-xyz/anchor";
-import { Amm } from "../../target/types/amm";
+import { Amm } from "../idl/amm";
 import { Connection } from "@solana/web3.js";
 import { useState } from "react";
 

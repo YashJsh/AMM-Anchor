@@ -15,7 +15,7 @@ import { TokenSelector } from "./tokenSelector";
 import { UserTokens } from "@/helper/getUserToken";
 import { swap_token } from "@/program/swap";
 import { Program } from "@coral-xyz/anchor";
-import { Amm } from "../../target/types/amm";
+import { Amm } from "../idl/amm";
 import { getSwapOutput } from "@/helper/getSwapAmount";
 import { PoolWithNeededMetaData } from "@/helper/getAllPool";
 import { useWallet } from "@solana/wallet-adapter-react";

@@ -1,6 +1,6 @@
 import { Program } from "@coral-xyz/anchor";
 import { PublicKey } from "@solana/web3.js";
-import { Amm } from "../../target/types/amm";
+import { Amm } from "../idl/amm";
 import { PROGRAM_ID } from "@/utils/program_id";
 import { WalletContextState } from "@solana/wallet-adapter-react";
 

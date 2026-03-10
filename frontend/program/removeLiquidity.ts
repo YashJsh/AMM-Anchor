@@ -1,5 +1,5 @@
 import { PublicKey } from "@solana/web3.js";
-import { Amm } from "../../target/types/amm";
+import { Amm } from "../idl/amm";
 import { Program } from "@coral-xyz/anchor/dist/cjs/program";
 import BN from "bn.js";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";

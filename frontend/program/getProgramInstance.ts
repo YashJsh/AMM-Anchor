@@ -2,7 +2,7 @@ import { Program, AnchorProvider, Idl } from "@coral-xyz/anchor"
 import idl from "../idl/amm.json"
 import { AnchorWallet } from "@solana/wallet-adapter-react"
 import { clusterApiUrl, Connection } from "@solana/web3.js";
-import { Amm } from "../../target/types/amm";
+import { Amm } from "../idl/amm";
 
 export const useProgram = (wallet : AnchorWallet, connection : Connection) => {
     if (!wallet){
