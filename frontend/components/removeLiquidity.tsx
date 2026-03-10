@@ -12,6 +12,7 @@ import { Program } from "@coral-xyz/anchor"
 import { Amm } from "../../target/types/amm"
 import { toast } from "sonner"
 import { BN } from "bn.js"
+import { getExplorerLink } from "@/helper/explorerHelper"
 
 export const RemoveLiquidity = ({
     pools,
@@ -106,7 +107,7 @@ export const RemoveLiquidity = ({
     try {
         toast.loading("Waiting for wallet approval...", { id: loadingToast });
 
-        const tx = await removeLiquidity(
+        const signature = await removeLiquidity(
             program,
             lpAmountBN,
             pool.tokenA.toBase58(),
@@ -117,9 +118,17 @@ export const RemoveLiquidity = ({
             wallet
         );
 
-        toast.success("Liquidity removed successfully!", { id: loadingToast });
+        const explorerUrl = getExplorerLink(signature, "devnet");
 
-        console.log("Remove liquidity tx:", tx);
+        toast.success("Liquidity removed successfully!", { 
+            id: loadingToast,
+            action: {
+                label: "View Tx",
+                onClick: () => window.open(explorerUrl, '_blank')
+            }
+        });
+
+        console.log("Remove liquidity tx:", signature);
 
         setLpAmount("");
         

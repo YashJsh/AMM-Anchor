@@ -59,6 +59,7 @@ export const swap_token = async (
       } as any)
       .rpc();
     console.log("Transaction Signature is : ", tx);
+    return tx;
   } catch (error) {
     console.error("Instruction Failed", error);
     throw error;

@@ -19,6 +19,7 @@ import { Button } from "./ui/button";
 import { toast } from "sonner";
 import { AddLiquidity } from "@/program/addLiquidity";
 import { PublicKey } from "@solana/web3.js";
+import { getExplorerLink } from "@/helper/explorerHelper";
 
 
 
@@ -51,16 +52,25 @@ export default function CreatePool({ tokens, onTransactionComplete }: { tokens: 
         }
         try {
             console.log("Control Reached in Initialized Pool");
-            const pool = await InitializePool(
+            const initResult = await InitializePool(
                 program,
                 tokenA,
                 tokenB,
                 fee,
                 wallet
             )
-            console.log("Pool Initialized : ",pool);
-            const provideLiquidity = await AddLiquidity(program, new PublicKey(tokenA), new PublicKey(tokenB), Number(inputtokenA), Number(inputTokenB), tokens, wallet, connection);
-            toast.success("Liquidity added");
+            console.log("Pool Initialized : ", initResult);
+            
+            const liquidity = await AddLiquidity(program, new PublicKey(tokenA), new PublicKey(tokenB), Number(inputtokenA), Number(inputTokenB), tokens, wallet, connection);
+            
+            const explorerUrl = getExplorerLink(liquidity.signature, "devnet");
+            
+            toast.success("Pool created and liquidity added", {
+                action: {
+                    label: "View Tx",
+                    onClick: () => window.open(explorerUrl, '_blank')
+                }
+            });
             
             if (onTransactionComplete) {
                 await onTransactionComplete();

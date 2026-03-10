@@ -119,7 +119,7 @@ export const AddLiquidity = async (
 
     const updatedPool = await program.account.pool.fetch(pool_pda);
 
-    return updatedPool;
+    return { pool: updatedPool, signature: tx };
   } catch (error) {
     console.error("Provide liquidity failed:", error);
     throw error;

@@ -19,6 +19,7 @@ import { Connection } from "@solana/web3.js";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { toast } from "sonner";
 import { getMint } from "@solana/spl-token"
+import { getExplorerLink } from "@/helper/explorerHelper";
 
 
 export const SpecificPool = ({
@@ -59,8 +60,16 @@ export const SpecificPool = ({
             return;
         }
         try {
-            const tx = await AddLiquidity(program, pool.tokenA, pool.tokenB, Number(tokenAAmount), Number(tokenBAmount), userTokens, wallet, connection);
-            toast.success("Liquidity added");
+            const result = await AddLiquidity(program, pool.tokenA, pool.tokenB, Number(tokenAAmount), Number(tokenBAmount), userTokens, wallet, connection);
+            
+            const explorerUrl = getExplorerLink(result.signature, "devnet");
+            
+            toast.success("Liquidity added", {
+                action: {
+                    label: "View Tx",
+                    onClick: () => window.open(explorerUrl, '_blank')
+                }
+            });
             
             if (onTransactionComplete) {
                 await onTransactionComplete();

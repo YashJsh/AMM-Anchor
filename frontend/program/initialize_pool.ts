@@ -40,7 +40,7 @@ export const InitializePool = async (program: Program<Amm>, tokenAMint: string, 
         let pool_state = await program.account.pool.fetch(pool_pda);
         console.log("Transaction Signature for initalizing the pool is : ", tx);
         console.log("Pool_state Initialized : ", pool_state);
-        return pool_pda;
+        return { poolAddress: pool_pda, signature: tx };
     } catch (error) {
         console.error("Initialization failed:", error);
         throw error;

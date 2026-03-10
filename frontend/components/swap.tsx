@@ -8,7 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-import { ArrowDown, Info } from "lucide-react";
+import { ArrowDown, Info, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { TokenSelector } from "./tokenSelector";
@@ -20,6 +20,7 @@ import { getSwapOutput } from "@/helper/getSwapAmount";
 import { PoolWithNeededMetaData } from "@/helper/getAllPool";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { toast } from "sonner";
+import { getExplorerLink } from "@/helper/explorerHelper";
 
 export const CreateSwap = ({
   userTokens,
@@ -73,7 +74,7 @@ export const CreateSwap = ({
 
       toast.loading("Executing swap...");
 
-      await swap_token(
+      const signature = await swap_token(
         program,
         amountInLamports,
         minOutLamports,
@@ -85,7 +86,18 @@ export const CreateSwap = ({
       );
 
       toast.dismiss();
-      toast.success("Swap successful");
+      const explorerUrl = getExplorerLink(signature, "devnet");
+      
+      toast.success("Swap successful", {
+        action: {
+          label: "View Tx",
+          onClick: () => window.open(explorerUrl, '_blank')
+        }
+      });
+
+      setFromAmount("");
+      setOutputAmount("");
+      setMinOutLamports(BigInt(0));
       
       if (onTransactionComplete) {
         await onTransactionComplete();
