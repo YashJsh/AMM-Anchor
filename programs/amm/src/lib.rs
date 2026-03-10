@@ -146,7 +146,7 @@ pub mod amm {
 
         let mut lp_amount = 0;
         if pool.reserve_a == 0 && pool.reserve_b == 0 {
-
+            
             match helper::first_lp(
                 accepted_a,
                 accepted_b,

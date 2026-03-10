@@ -32,7 +32,7 @@ export default function CreatePool({ tokens, onTransactionComplete }: { tokens: 
     const [tokenB, setTokenB] = useState("");
     const [inputtokenA, setInputTokenA] = useState("");
     const [inputTokenB, setInputTokenB] = useState("");
-    const [fee, setFee] = useState(30);
+    const [fee, setFee] = useState(3);
 
     if (!anchorWallet) {
         return null;
