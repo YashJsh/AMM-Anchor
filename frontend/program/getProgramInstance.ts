@@ -1,5 +1,5 @@
 import { Program, AnchorProvider, Idl } from "@coral-xyz/anchor"
-import idl from "../../target/idl/amm.json"
+import idl from "../idl/amm.json"
 import { AnchorWallet } from "@solana/wallet-adapter-react"
 import { clusterApiUrl, Connection } from "@solana/web3.js";
 import { Amm } from "../../target/types/amm";
